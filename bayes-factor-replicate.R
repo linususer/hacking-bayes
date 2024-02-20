@@ -39,12 +39,18 @@ tapply(vars1, print(bf10(10, 1, vars1)))
 mus <- c(0.1, 0.2, 0.5, 0.8, 1)
 var_data <- 1
 var1 <- 1
+n <- seq(1, 10000, 1)
+cols <- c("red", "blue", "green", "yellow", "black")
 
 # plot dependent on sample size and mu the bayes factor 01
-#for (mu in mus) {}
-mu <- 0.1
-# plot the bayes factor depending on n
-n <- seq(1, 10000, 1)
 pdf("bayes-factor-replicate.pdf")
-plot(n, bf01(bf10(n, mu, var1)), type = "l", xlab = "n", ylab = "BF_{01}", main = "Bayes Factor depending on n and mu")
+plot(n,  bf01(bf10(n, mus[1], var1)), type = "n", xlab = "n",
+     ylab = "BF_{01}", main = "Bayes Factor depending on n and mu",
+     ylim = c(0, 7), xlim = c(0, 1000))
+legend("topright", legend = paste("mu = ", mus), col = cols, lty = 1, cex = 0.8)
+
+for (i in 1:5) {
+  # plot the bayes factor depending on n
+  lines(n, bf01(bf10(n, mus[i], var1)), col = cols[i], lwd = 2)
+}
 dev.off()
