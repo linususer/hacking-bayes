@@ -39,7 +39,7 @@ tapply(vars1, print(bf10(10, 1, vars1)))
 mus <- c(0.1, 0.2, 0.5, 0.8, 1)
 var_data <- 1
 var1 <- 1
-n <- seq(1, 10000, 1)
+n <- seq(1, 1000, 1)
 cols <- c("red", "blue", "green", "yellow", "black")
 
 # plot dependent on sample size and mu the bayes factor 01
