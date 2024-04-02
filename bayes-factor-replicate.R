@@ -108,7 +108,7 @@ print(maxima_points(mus[1], var1))
 ###################
 
 # plot dependent on sample size and mu the bayes factor 01
-pdf("bayes-factor-replicate.pdf")
+pdf("plots/bf.pdf")
 plot(n,  bf01(bf10(n, mus[1], var1)), type = "n", xlab = "n",
      ylab = "BF_{01}", main = "Bayes Factor depending on n and mu",
      ylim = c(0, 7), xlim = c(0, 50))
@@ -130,7 +130,7 @@ dev.off()
 
 # plot with fixed mu and variable sigma
 fixed_mu <- 0.1
-pdf("bf-replicate-variance.pdf")
+pdf("plots/bf-variance.pdf")
 plot(n, bf01(bf10(n,fixed_mu,vars1)), type="n", xlab="n",
 ylab = "BF_{01}", main = "Bayes Factor depending on n and mu",
      ylim = c(0, 70), xlim = c(0, 1000))
@@ -153,7 +153,7 @@ dev.off()
 
 ## plot derivatives for bf10 (mus)
 
-pdf("bayes-factor-derivative.pdf")
+pdf("plots/bf-derivative.pdf")
 plot(n,  der_bf10(n, mus[1], var1), type = "n", xlab = "n",
      ylab = "BF_{10-derivative}", main = "Bayes Factor derivative depending on n and mu",
      ylim = c(-0.5, 0.5), xlim = c(-10, 100))
@@ -172,7 +172,7 @@ dev.off()
 
 
 ## plot derivatives for bf10 (variances)
-pdf("bayes-factor-derivative-variance.pdf")
+pdf("plots/bf-derivative-variance.pdf")
 plot(n,  der_bf10(n, fixed_mu, vars1), type = "n", xlab = "n",
      ylab = "BF_{10-derivative}", main = "Bayes Factor derivative depending on n and var",
      ylim = c(-1, 1), xlim = c(0, 10))
@@ -195,7 +195,7 @@ dev.off()
 logscale <- c(1, 10^seq(1, 4, 0.001))
 
 # plot dependent on sample size and mu the bayes factor 01
-pdf("bayes-factor-log-scale.pdf")
+pdf("plots/bf-log-scale.pdf")
 plot(logscale,  bf01(bf10(logscale, mus[1], var1)), type = "n", xlab = "n",
      ylab = "BF_{01}", main = "Bayes Factor depending on n and mu",
      ylim = c(0, 7), log = "x")
