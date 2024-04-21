@@ -1,69 +1,8 @@
 setwd("/home/linus/git/hacking-bayes")
 # clear workspace
 rm(list = ls())
-
-#####################
-##### FUNCTIONS #####
-#####################
-
-# calculate the bayes factor
-# BF_{10} := p_k(D|M_1) / p(D|M_0)
-# => BF_{10} = \frac{1}{\sqrt{1+n\sigma_1^2}} *
-# e^{\frac{n\sigma_1^2}{2(1+n\sigma_1^2)}\cdot \zeta^2}
-
-# Zeta:= \frac{\sqrt{n}(\tilde{Y}-0)}{\sigma} = \sqrt{n}\tilde{Y}
-# is classic one-sample zeta test
-# n is the sample size
-# mean is the mean of the sample
-zeta <- function(n, mean) {
-  sqrt(n) * mean
-}
-# var1 is the variance of the sample
-# n is the sample size
-# mean is the mean of the sample
-# bf10 is the bayes factor for the alternative hypothesis
-bf10 <- function(n, mean, var1) {
-  (1 / sqrt(1 + n * var1)) *
-    exp(((n * var1 / (2 * (1 + n * var1))) * zeta(n, mean)^2))
-}
-# calculate bf01
-# BF_{01} = 1 / BF_{10}
-# bf10 is the bayes factor for the alternative hypothesis
-# bf01 is the bayes factor for the null hypothesis
-bf01 <- function(bf10) {
-  1 / bf10
-}
-
-## derivative of bf10
-der_bf10 <- function(n, mean, var1){
-  (var1 * (n^2 * mean^2 * var1 + (2 * mean^2 - var1)*n-1)* 
-  exp(((n * var1 / (2 * (1 + n * var1))) * zeta(n, mean)^2))) /
-  (2*(1 + n * var1)^(5/2))
-}
-
-# calculates zero_points candidates of the derivative
-# \frac{\sigma_1^4-2\Bar{y}^2\sigma_1^2 \pm \sqrt{ \sigma_1^4 (4\Bar{y}^4 + \sigma_1^4)}}{2\Bar{y}^2\sigma_1^4}
-# mean is the mean of the sample
-# var1 is the variance of the sample
-# returns the two zero points of the derivative
-zero_points <- function(mean, var1) {
-  first_extr <- (var1 - 2 * mean^2 + sqrt(4 * mean^4 + var1^2)) /
-    (2 * mean^2 * var1)
-  second_extr <- (var1 - 2 * mean^2 - sqrt(4 * mean^4 + var1^2)) /
-    (2 * mean^2 * var1)
-  c(first_extr, second_extr)
-}
-
-# calculates the maximum points for the bayes-factor
-# mean is the mean of the sample
-# var1 is the variance of the sample
-# returns the maximum point of the bayes factor
-maxima_points <- function(mean, var){
-  (mean / (sqrt((1/2)*(var + sqrt(4*mean^4 + var^2))))) *
-    exp((0.5*var - mean^2 + sqrt(mean^4 + 0.25*var^2) + 
-    ((2*mean^4 - mean^2 * sqrt(4*mean^4 + var^2))/var)) /
-    (var + sqrt(4*mean^4 + var^2)))
-}
+# import functions
+source("bayes-factor-functions.R")
 
 ###########################
 ###### CONFIGURATION ######
@@ -76,6 +15,7 @@ var1 <- 1
 vars1 <- c(0.0001, 0.01, 1, 25, 100)
 n <- seq(1, 10000, 1)
 cols <- c("red", "blue", "green", "yellow", "black")
+bf <- 1/3
 
 
 ####################
@@ -100,7 +40,8 @@ print("BF01 examples:")
 print(bf10(zero_points(mus[1], var1)[1], mus[1], var1))
 print("Maxima points examples (should be same as bf01):")
 print(maxima_points(mus[1], var1))
-
+print("Newtons Method")
+# print(get_n_by_bf(0.1, 1, 3))
 
 
 ###################
@@ -111,7 +52,7 @@ print(maxima_points(mus[1], var1))
 pdf("plots/bf.pdf")
 plot(n,  bf01(bf10(n, mus[1], var1)), type = "n", xlab = "n",
      ylab = "BF_{01}", main = "Bayes Factor depending on n and mu",
-     ylim = c(0, 7), xlim = c(0, 50))
+     ylim = c(0, 7), xlim = c(0, 200))
 legend("topright", legend = paste("mu = ", mus), col = cols, lty = 1, cex = 0.8)
 
 for (i in 1:5) {
@@ -119,13 +60,16 @@ for (i in 1:5) {
   lines(n, bf01(bf10(n, mus[i], var1)), col = cols[i], lwd = 2)
   # sanity check: are zero points correct?
   zero_point <- zero_points(mus[i], var1)[1]
-  abline(v=zero_point, col = cols[i], lty = 1)
+  #abline(v=zero_point, col = cols[i], lty = 1)
   # sanity check: can maxima points still be computed?
   #maxima_point <- bf01(bf10(zero_point, mus[i], var1))
   maxima_point <- bf01(maxima_points(mus[i], var1))
   points(zero_point, maxima_point, col = cols[i], pch = 19)
   #print(zero_points(mus[i], var1))[2]
+  n_tuple <- get_n_by_bf(mus[i], var1, bf)
+  points(n_tuple, rep(bf, 2), pch = 19, col = cols[i])
 }
+abline(h = bf)
 dev.off()
 
 # plot with fixed mu and variable sigma
@@ -149,7 +93,6 @@ for (i in 1:5) {
   print(zero_points(fixed_mu, vars1[i]))[2]
 }
 dev.off()
-
 
 ## plot derivatives for bf10 (mus)
 
@@ -206,6 +149,25 @@ for (i in 1:5) {
   lines(n, bf01(bf10(n, mus[i], var1)), col = cols[i], lwd = 2)
   zero_point <- zero_points(mus[i], var1)[1]
   maxima_point <- bf01(maxima_points(mus[i], var1))
+  points(zero_point, maxima_point, col = cols[i], pch = 19)
+}
+dev.off()
+
+# log ( bf ) 
+print("Log Bayes Factor examples:")
+tapply(mus, print(log(bf10(10, mus, var1))))
+pdf("bf-log.pdf")
+plot(n, log(bf10(n, mus[1], var1)), type = "n", xlab = "n",
+     ylab = "log(BF_{10})", main = "log(Bayes Factor depending on n and mu",
+     xlim = c(0, 50),
+     ylim = c(-2, 2))
+legend("topright", legend = paste("mu = ", mus), col = cols, lty = 1, cex = 0.8)
+for (i in 1:5) {
+  # plot the bayes factor depending on n
+  lines(n, log(bf01(bf10(n, mus[i], var1))), col = cols[i], lwd = 2)
+  zero_point <- zero_points(mus[i], var1)[1]
+  maxima_point <- bf01(maxima_points(mus[i], var1))
+  abline(v=zero_point, col = cols[i], lty = 1)
   points(zero_point, maxima_point, col = cols[i], pch = 19)
 }
 dev.off()
