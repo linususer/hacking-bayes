@@ -6,14 +6,13 @@
 ```
 hacking-bayes
 .
-├── data
 ├── figures
 └── scripts
     ├── calculations
     └── plots
 ```
 
-Under `data` the main results of the Optional Stopping simulations with Normal and Cauchy Prior can be found in `hacking-bayes-results.db`. 
+The simulation data of the main results of the Optional Stopping simulations with Normal and Cauchy Prior can be found under [Releases](https://github.com/linususer/hacking-bayes/releases/download/sim_data1.0/hacking-bayes-factors.duckdb).
 
 The database is structured in four tables:
 
