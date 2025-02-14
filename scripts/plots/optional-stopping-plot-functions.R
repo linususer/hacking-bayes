@@ -2,12 +2,20 @@ setwd("/home/linus/git/hacking-bayes")
 # clear workspace
 rm(list = ls())
 source("bayes-factor-functions.R")
-
+library(duckdb)
 #################
-### READ DATA ###
+### LOAD DATA ###
 #################
-sym <- readRDS("data/from_1_sym_simulation_data")
-asym <- readRDS("data/from_1_asym_simulation_data")
+con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb")
+sym <- dbGetQuery(con, "SELECT *
+                        FROM bf_decision_threshold
+                        WHERE symmetrical = TRUE
+                        AND trial_start = 1")
+asym <- dbGetQuery(con, "SELECT *
+                        FROM bf_decision_threshold
+                        WHERE symmetrical = FALSE
+                        AND trial_start = 1")
+dbDisconnect(con)
 ##############
 ### CONFIG ###
 ##############
@@ -380,8 +388,16 @@ sim_diff_n_start <- function() {
   labels <- 1:15
 
   for (n_start in 1:15) {
+    con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb")
     sym <- data.frame()
-    sym <- readRDS(paste("data/from_", n_start, "_sym_simulation_data", sep = ""))
+    sym <- dbGetQuery(
+      con, "SELECT *
+                            FROM bf_decision_threshold
+                            WHERE symmetrical = TRUE
+                            AND trial_start = ?",
+      list(n_start)
+    )
+    dbDisconnect(con)
     h0_data <- sym[sym[, 1] == 0, , ]
     h1_data <- sym[sym[, 1] == 1, , ]
 
