@@ -17,13 +17,14 @@ freq_optional_stopping <- function() {
     # plot p-values
     pdf("figures/frequentistic-optional-stopping.pdf")
     plot(p_val,
-        type = "l", col = "#59B3E6", lwd = 2, xlab = "Sample Size", ylab = "p-value",
-        main = "Frequentistic Optional Stopping"
+        type = "l", col = "black", lwd = 4, xlab = "Sample Size", ylab = "p-value",
+        main = "Frequentistic Optional Stopping",
+        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
     )
-    points(length(p_val), t.test(data)$p.value, col = "black", pch = 4, cex = 2, lwd = 2)
+    points(length(p_val), t.test(data)$p.value, col = "black", pch = 4, cex = 2, lwd = 4)
     # add significance threshold with text
     text(0, 0.075, "Significance Threshold p = 0.05", pos = 4, col = "black")
-    abline(h = 0.05, col = "black", lty = 2, lwd = 2)
+    abline(h = 0.05, col = "black", lty = 2, lwd = 4)
     dev.off()
 }
 
@@ -127,21 +128,28 @@ bf01_mus_plot <- function(ns, mus, true_var, prior_var, logscale = FALSE, file_n
 point_and_cauchy_prior <- function() {
     library("BayesFactor")
     # plot point prior and cauchy prior
-    pdf("figures/point-prior-and-cauchy-prior.pdf")
+    pdf("figures/point-prior-and-cauchy-prior.pdf",  width = 8, height = 4)
+    # double the font size
     plot(0, 0,
-        xlim = c(-5, 5), ylim = c(0, 0.5), type = "n",
+        xlim = c(-3, 3), ylim = c(0, 0.5), type = "n",
         main = "Point Prior vs Cauchy Prior",
-        ylab = "Density", xlab = "Mean"
+        ylab = "", xlab = "",
+        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
     )
-    lines(seq(-5, 5, 0.01), dcauchy(seq(-5, 5, 0.01), 0, 1 / sqrt(2)), col = "#59B3E6", lwd = 2)
+    
+    # Plot the Cauchy prior density
+    x_vals <- seq(-5, 5, 0.01)
+    lines(x_vals, dcauchy(seq(-5, 5, 0.01), 0, 1 / sqrt(2)), col = "#59B3E6", lwd = 4)
     points(0, 0.5, col = "#CD1076", pch = 19, cex = 2)
-    abline(v = 0, col = "#CD1076", lwd = 5)
-    legend("topright",
-        legend = c("Point Prior", "Cauchy Prior"),
-        fill = c("#CD1076", "#59B3E6")
-    )
+    lines(c(0, 0), y = c(0, 0.5), col = "#CD1076", lwd = 4)
+    cauchy_at_0 <- dcauchy(0, 0, 1 / sqrt(2))
+    points(0, cauchy_at_0, col = "black", pch = 4, cex = 2)
+    # text with rscale
+    #text(0, 1/sqrt(2), "r-scale", col = "black", cex = 2)
+    #lines(c(-cauchy_at_0, cauchy_at_0), c(1/3, 1/3), col = "#59B3E6", lwd = 4)
     dev.off()
 }
+
 
 bf01_var_plot <- function(ns, mu, vars, prior_var) {
     source("bayes-factor-functions.R")

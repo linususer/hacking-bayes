@@ -49,47 +49,155 @@ cauchy_plot <- function() {
 
 realistic_sim_overview_plot <- function() {
     con <- dbConnect(duckdb(), db_file)
+    pdf(paste("figures/realistic-sym-decision-prob", ".pdf", sep = ""), width = 12, height = 8)
+    par(mfrow = c(2,3), mar = c(5, 5, 5, 5))
+    # Add one space
+    plot.new()
+    # base case
+    plot(0, 0,
+        xlim = c(0, 1), ylim = c(0, 1), type = "n",
+        main = "Base Case",
+        ylab = bquote("Decision Probability for " * H[0]), xlab = bquote(delta),
+        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
+    )
+    base <- dbGetQuery(
+        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+                FROM cauchy_sym
+                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                AND trial_start = 2 AND trial_end = 100000
+                GROUP BY mu
+                ORDER BY mu",
+        list(r_vals[2], BF_crits[1])
+    )
+    lines(base[[1]], base[[2]], col = my_colors[1], lwd = 3)
+    abline(h = 1/BF_crits[1], col = my_colors[1], lty = 2, lwd = 3)
+    # Add one space
+    plot.new()
+    # Plot BF_crits
+    plot(0, 0,
+        xlim = c(0, 1), ylim = c(0, 1), type = "n",
+        main = bquote("Varying " * BF[crit]),
+        ylab = bquote("Decision Probability for " * H[0]), xlab = bquote(delta),
+        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
+    )
+    bf1 <- dbGetQuery(
+        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+                FROM cauchy_sym
+                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                AND trial_start = 2 AND trial_end = 100000
+                GROUP BY mu
+                ORDER BY mu",
+        list(r_vals[2], BF_crits[1])
+    )
+    bf2 <- dbGetQuery(
+        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+                FROM cauchy_sym
+                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                AND trial_start = 2 AND trial_end = 100000
+                GROUP BY mu
+                ORDER BY mu",
+        list(r_vals[2], BF_crits[2])
+    )
+    bf3 <- dbGetQuery(
+        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+                FROM cauchy_sym
+                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                AND trial_start = 2 AND trial_end = 100000
+                GROUP BY mu
+                ORDER BY mu",
+        list(r_vals[2], BF_crits[3])
+    )
+    lines(bf1[[1]], bf1[[2]], col = my_colors[1], lwd = 3)
+    lines(bf2[[1]], bf2[[2]], col = my_colors[2], lwd = 3)
+    lines(bf3[[1]], bf3[[2]], col = my_colors[3], lwd = 3)
+    # Add universal bounds
+    abline(h = 1/BF_crits[1], col = my_colors[1], lty = 2, lwd = 3)
+    abline(h = 1/BF_crits[2], col = my_colors[2], lty = 2, lwd = 3)
+    abline(h = 1/BF_crits[3], col = my_colors[3], lty = 2, lwd = 3)
+
+    legend("topright",
+        legend = c(bquote(BF[crit] == 3), bquote(BF[crit] == 6), bquote(BF[crit] == 10)),
+        col = my_colors, lwd = 3
+    )
     # Plot the decision probability for H0 given mu
-    for (bf_crit in BF_crits) {
-        pdf(paste("figures/realistic-sym-decision-prob-bf-crit-", bf_crit, ".pdf", sep = ""))
+    #for (bf_crit in BF_crits) {
         plot(0, 0,
             xlim = c(0, 1), ylim = c(0, 1), type = "n",
-            main = "Decision probability for symmetrical rule in realistic setting",
-            ylab = bquote("Decision Probability for " * H[0]), xlab = bquote(mu)
+            main = "Varying r-scale",
+            ylab = "",
+            xlab = bquote(delta),
+            cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
         )
         r1 <- dbGetQuery(
             con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
                     FROM cauchy_sym
                     WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                    AND trial_start = 2 AND trial_end = 100000
                     GROUP BY mu
                     ORDER BY mu",
-            list(r_vals[1], bf_crit)
+            list(r_vals[1], BF_crits[1])
         )
         r2 <- dbGetQuery(
             con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
                     FROM cauchy_sym
                     WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                    AND trial_start = 2 AND trial_end = 100000
                     GROUP BY mu
                     ORDER BY mu",
-            list(r_vals[2], bf_crit)
+            list(r_vals[2], BF_crits[1])
         )
-        r2 <- dbGetQuery(
+        r3 <- dbGetQuery(
             con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
                     FROM cauchy_sym
                     WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                    AND trial_start = 2 AND trial_end = 100000
                     GROUP BY mu
                     ORDER BY mu",
-            list(r_vals[3], bf_crit)
+            list(r_vals[3], BF_crits[1])
         )
-        lines(r1[1], r1[2], col = my_colors[1], lwd = 2)
-        lines(r2[1], r2[2], col = my_colors[2], lwd = 2)
-        lines(r3[1], r3[2], col = my_colors[3], lwd = 2)
+        lines(r1[[1]], r1[[2]], col = my_colors[2], lwd = 3)
+        lines(r2[[1]], r2[[2]], col = my_colors[1], lwd = 3)
+        lines(r3[[1]], r3[[2]], col = my_colors[3], lwd = 3)
+        abline(h = 1/BF_crits[1], col = my_colors[1], lty = 2, lwd = 3)
         legend("topright",
             legend = c(bquote(r == 0.5 / sqrt(2)), bquote(r == 1 / sqrt(2)), bquote(r == 2 / sqrt(2))),
-            col = my_colors, lwd = 2
+            col = c(my_colors[2], my_colors[1], my_colors[3]), lwd = 3
         )
-        dev.off()
-    }
+            # Plot 20-200 vs. 2 to 100000
+    plot(0, 0,
+        xlim = c(0, 1), ylim = c(0, 1), type = "n",
+        main = "2 to 100000 vs. 20 to 200",
+        ylab = "",
+        xlab = bquote(delta),
+        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
+    )
+    short_range <- dbGetQuery(
+        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+                FROM cauchy_sym
+                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                AND trial_start = 20 AND trial_end = 200
+                GROUP BY mu
+                ORDER BY mu",
+        list(r_vals[2], BF_crits[1])
+    )
+    long_range <- dbGetQuery(
+        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+                FROM cauchy_sym
+                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+                AND trial_start = 2 AND trial_end = 100000
+                GROUP BY mu
+                ORDER BY mu",
+        list(r_vals[2], BF_crits[1])
+    )
+    lines(long_range[[1]], long_range[[2]], col = my_colors[1], lwd = 3)
+    lines(short_range[[1]], short_range[[2]], col = my_colors[2], lwd = 3)
+    abline(h = 1/BF_crits[1], col = my_colors[1], lty = 2, lwd = 3)
+    legend("topright",
+        legend = c("2 to 100000","20 to 200"),
+        col = c(my_colors[1], my_colors[2]), lwd = 3
+    )
+    dev.off()
+    #}
     dbDisconnect(con)
 }
 # Plot three BF01 curves for mus and decision probability for H0 given mu
