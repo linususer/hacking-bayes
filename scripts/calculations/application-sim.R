@@ -1,15 +1,28 @@
-setwd("/home/linus/git/hacking-bayes")
-# clear workspace
+# A simluation to create an application example how the misspecification 
+# of each parameter can be used to tweak results in Bayesian Optional Stopping
+# even though the data is drawn from the same distribution.
+setwd(".")
+# Clear workspace
 rm(list = ls())
-# load libraries
+# Load libraries
 library("data.table")
 library("duckdb")
-# import bf
+# Import Bayes Factor functions
 source("bayes-factor-functions.R")
-# fixed_mu <- 0.1
-# mus <- c(0.1, 0.2, 0.5, 0.8, 1)
 
-
+#' @description Calculate an applicable example of misspecified params 
+#' with Bayesian Optional Stopping drawn from a normal distribution.
+#'
+#' @param mu true effect size
+#' @param fixed_sigma standard deviation of the specified prior
+#' @param prior_var true, known variance of the drawn data
+#' @param bf_crit critical Bayes Factor threshold for H1
+#' @param n_start sample to start with Optional Stopping
+#' @param n_end sample to stop with Optional Stopping
+#' @return resulting data.table of 20000 Optional Stopping decisions
+#' @note for reference see Szillat (2024), p. 58ff. 
+#' @references Szillat, Linus R.P. (2024). Hacking Bayes Factors with Optional Stopping 
+#' [Unpublished bachelor's thesis]. University of Tübingen. Also can be found at linus-szillat.de/thesis.
 applicationExampleSim <- function(mu, fixed_sigma, prior_var, bf_crit, n_start, n_end) {
     results <- vector("list", length = 20000)
     repetitions <- 20000
@@ -53,7 +66,9 @@ applicationExampleSim <- function(mu, fixed_sigma, prior_var, bf_crit, n_start, 
 }
 
 
-# MAXIMIZE P(H0)
+# Application Example to maximize P('H0')
+# Set configuration
+
 mu <- 0.1
 fixed_sigma <- 2
 prior_var <- 3^2
@@ -62,13 +77,15 @@ ns <- get_n_by_bf(0.1, fixed_sigma^2, prior_var, bf_crit)
 n_start <- if (is.nan(ns[1])) 1 else round(ns[2])
 n_end <- if (is.nan(ns[2])) Inf else round(ns[1])
 
+# Calculate results and store them in a duckDB database
 results <- applicationExampleSim(mu, fixed_sigma, prior_var, bf_crit, n_start, n_end)
 con <- dbConnect(duckdb(), dbdir = "data/results.duckdb", read_only = FALSE)
 dbExecute(con, "DROP TABLE IF EXISTS application_example")
 dbWriteTable(con, "application_example", results)
 dbDisconnect(con)
 
-# MAXIMIZE P(H1)
+# Application example to maximize P('H1')
+# Set configuration
 mu <- 0.1
 fixed_sigma <- 1
 prior_var <- 0.15^2
@@ -77,6 +94,7 @@ ns <- get_n_by_bf(0.1, fixed_sigma^2, prior_var, bf_crit)
 n_start <- if (is.nan(ns[1])) 1 else round(ns[2])
 n_end <- if (is.nan(ns[2])) Inf else round(ns[1])
 
+# Calculate results and store them in a duckDB database
 results <- applicationExampleSim(mu, fixed_sigma, prior_var, bf_crit, n_start, n_end)
 con <- dbConnect(duckdb(), dbdir = "data/results.duckdb", read_only = FALSE)
 dbAppendTable(con, "application_example", results)
