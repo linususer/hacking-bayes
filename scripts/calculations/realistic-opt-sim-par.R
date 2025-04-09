@@ -1,5 +1,5 @@
-# Set working directory
-setwd("/home/linus/git/hacking-bayes")
+# 
+setwd(".")
 
 # Clear workspace
 rm(list = ls())

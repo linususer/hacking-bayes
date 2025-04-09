@@ -128,25 +128,25 @@ bf01_mus_plot <- function(ns, mus, true_var, prior_var, logscale = FALSE, file_n
 point_and_cauchy_prior <- function() {
     library("BayesFactor")
     # plot point prior and cauchy prior
-    pdf("figures/point-prior-and-cauchy-prior.pdf",  width = 8, height = 4)
+    pdf("figures/point-prior-and-cauchy-prior.pdf", width = 8, height = 4)
     # double the font size
     plot(0, 0,
         xlim = c(-3, 3), ylim = c(0, 0.5), type = "n",
         main = "Point Prior vs Cauchy Prior",
-        ylab = "", xlab = "",
+        ylab = "", xlab = bquote("Effect Size " * delta),
         cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
     )
-    
+
     # Plot the Cauchy prior density
     x_vals <- seq(-5, 5, 0.01)
     lines(x_vals, dcauchy(seq(-5, 5, 0.01), 0, 1 / sqrt(2)), col = "#59B3E6", lwd = 4)
     points(0, 0.5, col = "#CD1076", pch = 19, cex = 2)
     lines(c(0, 0), y = c(0, 0.5), col = "#CD1076", lwd = 4)
     cauchy_at_0 <- dcauchy(0, 0, 1 / sqrt(2))
-    points(0, cauchy_at_0, col = "black", pch = 4, cex = 2)
-    # text with rscale
-    #text(0, 1/sqrt(2), "r-scale", col = "black", cex = 2)
-    #lines(c(-cauchy_at_0, cauchy_at_0), c(1/3, 1/3), col = "#59B3E6", lwd = 4)
+    points(0, cauchy_at_0, col = "black", pch = 4, cex = 2) #
+    arrows(x0 = 0, x1 = 1 / sqrt(2), y0 = dcauchy(1 / sqrt(2)), y1 = dcauchy(1 / sqrt(2)), length = 0.15, lwd = 4)
+    text(x = 1 / (2 * sqrt(2)), y = dcauchy(1/sqrt(2)) + 0.02, label = "r")
+    legend("topleft",legend=c(bquote(H[0]: delta == 0), bquote(H[1]: delta %~% Cauchy(r))),fill = c("#CD1076", "#59B3E6"))
     dev.off()
 }
 

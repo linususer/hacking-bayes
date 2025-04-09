@@ -1,5 +1,8 @@
-setwd("/home/linus/git/hacking-bayes")
-# clear workspace
+# Simulating the Bayesian Optional Stopping procedure 
+# with different cauchy priors and storing each sampled 
+# data point and calculated Bayes Factor.
+setwd(".")
+# Clear workspace
 rm(list = ls())
 # Load required libraries
 library(BayesFactor)
@@ -11,9 +14,14 @@ library(duckdb)
 # Register parallel backend
 registerDoParallel(cores = detectCores() - 1)
 
-# Define the parallelized simulation function
-# Function to perform the simulation
-simulate_for_mu_repetition <- function(mu_value, repl_id) {
+#'@description Calculate one Bayesian Optional Stopping procedure 
+#' and store results until maximum sample size is reached.
+#' 
+#' @param mu_value true effect size
+#' @param repl_id id of the current replication
+#' @param max_n maximum number of samples to collect
+#' @return data.table with sample size and corresponding Bayes Factor
+simulate_for_mu_repetition <- function(mu_value, repl_id, max_n) {
     print(paste("Simulation starts for mu =", mu_value, ", repetition =", repl_id))
     start <- Sys.time()
     data <- rnorm(2, mean = mu_value, sd = 1) # Initial data
@@ -36,9 +44,8 @@ simulate_for_mu_repetition <- function(mu_value, repl_id) {
 ##########################
 ####### SIMULATION #######
 ##########################
-# Example usage
 repetitions <- 20000
-# Adapt chunk_size depending on your memory capacity
+# Adapt chunk_size depending on your memory capacity for parallelization
 chunk_size <- 2000
 chunks <- 1:(repetitions / chunk_size)
 max_n <- 100
@@ -49,19 +56,21 @@ begin_time <- Sys.time()
 total_rows <- repetitions * length(mus) * (max_n - 2) # Total number of rows
 temp_files <- vector("list", length(mus) * repetitions) # List to store temporary file names
 
-# Parallelize the simulation
+# Open database connection and create corresponding table
 con <- dbConnect(duckdb(), dbdir = "data/results.duckdb")
 dbExecute(con, "DROP TABLE IF EXISTS cauchy_prior_simulation")
 dbExecute(con, "CREATE TABLE cauchy_prior_simulation (rep_id INTEGER, mu DOUBLE, sample_size INTEGER, bayes_factor DOUBLE)")
 
+# Parallelize for each true effect size and replication and specified chunk size
 foreach(mu = mus) %do% {
     for (chunk in chunks) {
         chunk_start <- 1 + (chunk - 1) * chunk_size
         chunk_end <- chunk * chunk_size
         print(paste("Starting chunk", chunk, "from", chunk_start, "to", chunk_end))
         rbindlist(foreach(rep_id = chunk_start:chunk_end) %dopar% {
-            simulate_for_mu_repetition(mu, rep_id)
+            simulate_for_mu_repetition(mu, rep_id, max_n)
         }) -> results
+        # Write results in the database table
         dbWriteTable(con, "cauchy_prior_simulation", results, append = TRUE)
     }
 }
