@@ -13,7 +13,7 @@ library(data.table)
 library(duckdb)
 
 # Register parallel backend
-registerDoParallel(cores = detectCores() - 2)
+registerDoParallel(cores = detectCores() - 1)
 
 
 #' Simulates Fixed Stopping from a sample size start and end.
@@ -29,7 +29,7 @@ simulate_fixed_size <- function(mu, r, BF_crit, repetitions, trial_start = 2, tr
         while (trial_count <= trial_end) {
             x <- rnorm(trial_count, mean = mu, sd = 1)
             BF <- extractBF(ttestBF(x, mu = 0, r = r))$bf
-            if(is.na(BF) || is.null(BF)){
+            if (is.na(BF) || is.null(BF)) {
                 next
             }
             # decide for 'H0', 'H1' or 'indecisive'
@@ -50,15 +50,15 @@ simulate_fixed_size <- function(mu, r, BF_crit, repetitions, trial_start = 2, tr
 }
 
 # Initialize variables
-big_sim_mus <- seq(0, 1, 0.05)
+big_sim_mus <- c(seq(0, 0.09, 0.01), seq(0.1, 1, 0.05))
 r_vals <- c(0.5, 1, 2) / sqrt(2)
-BF_crits <- c(3,6, 10)
-repetitions <- 1000
-chunk_size <- 200
+BF_crits <- c(3)
+repetitions <- 10000
+chunk_size <- 500
 # chunks need to be integers!
 chunks <- 1:(repetitions / chunk_size)
 # Connect to database
-con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb") #WIP!!!!!!
+con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb") # WIP!!!!!!
 dbExecute(con, "DROP TABLE IF EXISTS cauchy_sym_fixed_size")
 dbExecute(con, "CREATE TABLE IF NOT EXISTS cauchy_sym_fixed_size (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
 # Perform parallel simulations between [2,1000] fixed sample sizes
@@ -70,6 +70,26 @@ foreach(mu = big_sim_mus) %do% {
             } -> results
             results <- rbindlist(results)
             dbWriteTable(con, "cauchy_sym_fixed_size", results, append = TRUE)
+        }
+    }
+}
+dbDisconnect(con)
+
+con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb") # WIP!!!!!!
+dbExecute(con, "DROP TABLE IF EXISTS cauchy_sym_fixed_size_r")
+dbExecute(con, "CREATE TABLE IF NOT EXISTS cauchy_sym_fixed_size_r (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
+repetitions <- 1000
+chunk_size <- 50
+# chunks need to be integers!
+chunks <- 1:(repetitions / chunk_size)
+foreach(mu = big_sim_mus) %do% {
+    foreach(r = r_vals) %do% {
+        foreach(BF_crit = BF_crits) %do% {
+            foreach(chunks) %dopar% {
+                simulate_fixed_size(mu, r, BF_crit, chunk_size, trial_start = 2, trial_end = 1000)
+            } -> results
+            results <- rbindlist(results)
+            dbWriteTable(con, "cauchy_sym_fixed_size_r", results, append = TRUE)
         }
     }
 }
