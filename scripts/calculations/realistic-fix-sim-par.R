@@ -78,7 +78,7 @@ chunks <- 1:(repetitions / chunk_size)
 con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb") # WIP!!!!!!
 dbExecute(con, "DROP TABLE IF EXISTS cauchy_sym_fixed_size_r")
 dbExecute(con, "CREATE TABLE IF NOT EXISTS cauchy_sym_fixed_size_r (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
-repetitions <- 5000
+repetitions <- 10000
 r_vals <- c(0.5, 1, 2) / sqrt(2)
 BF_crits <- c(3)
 chunk_size <- 500
@@ -100,7 +100,7 @@ dbDisconnect(con)
 con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb") # WIP!!!!!!
 dbExecute(con, "DROP TABLE IF EXISTS cauchy_sym_fixed_size_bf_crit")
 dbExecute(con, "CREATE TABLE IF NOT EXISTS cauchy_sym_fixed_size_bf_crit (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
-repetitions <- 5000
+repetitions <- 10000
 BF_crits <- c(3, 6, 10)
 chunk_size <- 500
 # chunks need to be integers!
@@ -112,7 +112,7 @@ foreach(mu = big_sim_mus) %do% {
                 simulate_fixed_size(mu, r, BF_crit, chunk_size, trial_start = 2, trial_end = 1000)
             } -> results
             results <- rbindlist(results)
-            dbWriteTable(con, "cauchy_sym_fixed_size_r", results, append = TRUE)
+            dbWriteTable(con, "cauchy_sym_fixed_size_bf_crit", results, append = TRUE)
         }
     }
 }
