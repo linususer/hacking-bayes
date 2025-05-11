@@ -291,7 +291,7 @@ realistic_sim_decision_prob_curve <- function(bf_crit, r_val) {
 # WORK IN PROGRESS!
 # db_file <- "data/results.duckdb"
 fixed_big_mus <- c(seq(0, 0.09, 0.01), seq(0.1, 1, 0.05))
-BF_crits <- c(3)#,6,10)
+BF_crits <- c(10)
 # Plot decision probability for 'H0' on y axis and sample size on the x axis
 realistic_sim_fixed_size_plot <- function() {
     con <- dbConnect(duckdb(), db_file)
@@ -307,12 +307,12 @@ realistic_sim_fixed_size_plot <- function() {
         for (BF_crit in BF_crits) {
             fixed_size <- dbGetQuery(
                 con, "SELECT trial_count, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
-                FROM cauchy_sym_fixed_size_r
+                FROM cauchy_sym_fixed_size
                 WHERE ABS(? - mu) < 1e-6 AND ABS(? - r) < 1e-6 AND bf_crit = ?
                 AND trial_start = 2 AND trial_end = 1000
                 GROUP BY trial_count
                 ORDER BY trial_count",
-                list(mu, r_vals[1], BF_crit)
+                list(mu, r_vals[2], BF_crit)
             )
             opt_stop <- dbGetQuery(
                 con, "SELECT stop_count, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob,
@@ -322,7 +322,7 @@ realistic_sim_fixed_size_plot <- function() {
                 AND trial_start = 2 AND trial_end = 100000
                 GROUP BY stop_count
                 ORDER BY stop_count",
-                list(mu, r_vals[1], BF_crit)
+                list(mu, r_vals[2], BF_crit)
             )
             opt_stop_mean <- sum((opt_stop[[1]] * opt_stop[[3]])) / 20000
             opt_stop_sd <- sd(opt_stop[[1]])
@@ -342,10 +342,10 @@ realistic_sim_fixed_size_plot()
 
 # Plot maximum probability of 'H0' for each mu
 
-realistic_sim_fixed_max <- function() {
+realistic_sim_fixed_max <- function(bf_crit, r) {
     con <- dbConnect(duckdb(), db_file)
     # Decision probability for H0 given mu
-    pdf(paste("figures/realistic-sim-fixed-max-bf3.pdf", sep = ""))
+    #pdf(paste("figures/realistic-sim-fixed-max-bf3.pdf", sep = ""))
     plot(0, 0,
         xlim = c(0, 1), ylim = c(0, 1), type = "n",
         main = bquote("Decision probability for 'H0'"),
@@ -368,7 +368,7 @@ realistic_sim_fixed_max <- function() {
                     WHERE p2.mu = p.mu
                   )
                     ORDER BY mu, trial_count",
-        list(r_vals[2], BF_crits[2])
+        list(r, bf_crit)
     )
     opt_stop <- dbGetQuery(
         con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob,
@@ -378,13 +378,13 @@ realistic_sim_fixed_max <- function() {
                 AND trial_start = 2 AND trial_end = 100000
                 GROUP BY mu
                 ORDER BY mu",
-        list(r_vals[2], BF_crits[2])
+        list(r, bf_crit)
     )
     # get the first index where the probability is smaller than 0.5
     lines(fixed_max[["mu"]], fixed_max[["prob"]], col = "black", lwd = 2)
     lines(opt_stop[["mu"]], opt_stop[["prob"]], col = my_colors[2], lwd = 2)
     legend("topright", legend = c("fixed probability maximum", "optional stopping probability"), fill = c("black", my_colors[2]))
-    dev.off()
+    #dev.off()
     dbDisconnect(con)
     max_arg <- max_arg <- merge(
         fixed_max[, c("mu", "trial_count")],
@@ -394,42 +394,304 @@ realistic_sim_fixed_max <- function() {
     )
     print(max_arg)
 }
-realistic_sim_fixed_max()
 
-realistic_sim_diff <- function() {
+realistic_sim_diff <- function(bf_crit, r_val) {
     con <- dbConnect(duckdb(), db_file)
-    # Queries
-        opt_stop <- dbGetQuery(
-        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob,
-                AVG(stop_count) AS mean_count
-                FROM cauchy_sym
-                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-                AND trial_start = 2 AND trial_end = 100000
-                GROUP BY mu
-                ORDER BY mu",
-        list(r_vals[2], BF_crits[1])
+    results <- dbGetQuery(con, "
+    WITH opt AS (
+      SELECT
+        mu,
+        AVG(stop_count)                               AS avg_stop,
+        SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END)*1.0/COUNT(*) AS prob_opt
+      FROM cauchy_sym
+      WHERE
+        ABS(r - ?) < 1e-6
+        AND bf_crit    = ?
+        AND trial_start = 2
+        AND trial_end   = 100000
+      GROUP BY mu
+    ),
+    fixed AS (
+      SELECT
+        mu,
+        trial_count,
+        SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END)*1.0/COUNT(*) AS prob_fixed
+      FROM cauchy_sym_fixed_size
+      WHERE
+        ABS(r - ?) < 1e-6
+        AND bf_crit    = ?
+        AND trial_start = 2
+        AND trial_end   = 1000
+      GROUP BY mu, trial_count
+    ),
+    nearest AS (
+      SELECT
+        o.mu        AS delta,
+        o.avg_stop,
+        o.prob_opt,
+        f.trial_count AS n_fixed,
+        f.prob_fixed,
+        ROW_NUMBER() OVER (
+          PARTITION BY o.mu
+          ORDER BY ABS(f.trial_count - o.avg_stop)
+        ) AS rn
+      FROM opt o
+      JOIN fixed f ON o.mu = f.mu
     )
-    fixed <- dbGetQuery(
-        con, "WITH prob_table AS (
-                    SELECT MU, trial_count, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
-                    FROM cauchy_sym_fixed_size
-                    WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-                    AND trial_start = 2 AND trial_end = 1000
-                    GROUP BY mu, trial_count
-                    ORDER BY mu, trial_count
-                )
-                SELECT *
-                  FROM prob_table p
-                  WHERE prob = (
-                    SELECT MAX(prob)
-                    FROM prob_table p2
-                    WHERE p2.mu = p.mu
-                  )
-                    ORDER BY mu, trial_count",
-        list(r_vals[2], BF_crits[1])
+    SELECT
+      delta,
+      avg_stop,
+      prob_opt,
+      n_fixed,
+      prob_fixed
+    FROM nearest
+    WHERE rn = 1
+    ORDER BY delta
+  ", params = list(r_val, bf_crit, r_val, bf_crit))
+
+    dbDisconnect(con)
+
+    #pdf(paste("figures/realistic-sim-fixed-vs-opt-stop-", bf_crit, "-", r_val, ".pdf", sep = ""))
+    plot(0, 0,
+        xlim = c(0, 1), ylim = c(0, 1), type = "n",
+        main = bquote("Decision probability for 'H0'"),
+        ylab = bquote("Decision Probability for " * H[0]), xlab = bquote("Effect size " * delta)
     )
+    lines(results[["delta"]], results[["prob_fixed"]], col = "black", lwd = 2)
+    lines(results[["delta"]], results[["prob_opt"]], col = my_colors[2], lwd = 2)
+    legend("topright", legend = c("fixed probability on opt stop average", "optional stopping probability"), fill = c("black", my_colors[2]))
+    #dev.off()
 }
 
-# P('Diff') = P(H0 | n_opt_stop_avg) and P(H0 | n_fixed) if n_fixed = n_opt_stop_avg
+# P('Diff') = P(H0 | n_opt_stop_avg) and P(H0 | n_fixed) for n_fixed ~= n_opt_stop_avg
 # get stop_counts from optional stopping results
 #  P('Diff')
+
+realistic_sim_weighted_sum <- function(bf_crit, r_val, db_file = "data/hacking-bayes.duckdb") {
+    con <- dbConnect(duckdb(), db_file)
+
+    # Get all distinct delta (mu) values
+    deltas <- dbGetQuery(con, "
+    SELECT DISTINCT mu
+    FROM cauchy_sym
+    ORDER BY mu
+  ")$mu
+
+    results <- data.frame(
+        delta = numeric(0),
+        weighted_sum = numeric(0)
+    )
+
+    for (delta_to_check in deltas) {
+        # Query stop distribution
+        stop_dist <- dbGetQuery(con, "
+      SELECT
+        stop_count,
+        COUNT(*) AS total,
+        SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS p_h0
+      FROM cauchy_sym
+      WHERE
+        ABS(mu - ?) < 1e-6 AND ABS(r - ?) < 1e-6 AND bf_crit = ?
+        AND trial_start = 2 AND trial_end = 100000
+      GROUP BY stop_count
+      ORDER BY stop_count
+    ", params = list(delta_to_check, r_val, bf_crit))
+
+        # Skip if no data
+        if (nrow(stop_dist) == 0) next
+
+        # Query fixed trial probabilities
+        fixed_probs <- dbGetQuery(con, "
+      SELECT
+        trial_count,
+        SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS p_h0_fixed
+      FROM cauchy_sym_fixed_size
+      WHERE
+        ABS(mu - ?) < 1e-6 AND ABS(r - ?) < 1e-6 AND bf_crit = ?
+        AND trial_start = 2 AND trial_end = 1000
+        AND trial_count IN (
+          SELECT DISTINCT stop_count
+          FROM cauchy_sym
+          WHERE
+            ABS(mu - ?) < 1e-6 AND ABS(r - ?) < 1e-6 AND bf_crit = ?
+        )
+      GROUP BY trial_count
+      ORDER BY trial_count
+    ", params = list(delta_to_check, r_val, bf_crit, delta_to_check, r_val, bf_crit))
+
+        if (nrow(fixed_probs) == 0) next
+
+        # Merge and compute weighted result
+        merged <- merge(stop_dist, fixed_probs, by.x = "stop_count", by.y = "trial_count")
+        merged$prob_stop <- merged$total / sum(merged$total)
+        merged$weighted <- merged$prob_stop * merged$p_h0_fixed
+        weighted_sum <- sum(merged$weighted)
+
+        results <- rbind(results, data.frame(delta = delta_to_check, weighted_sum = weighted_sum))
+    }
+    dbDisconnect(con)
+
+    #pdf(paste("figures/realistic-sim-fixed-weighted-sum-", bf_crit, "-", r_val, ".pdf", sep = ""))
+    plot(0, 0,
+        xlim = c(0, 1), ylim = c(0, 1), type = "n",
+        main = bquote("Decision probability for 'H0'"),
+        ylab = bquote("Decision Probability for " * H[0]), xlab = bquote("Effect size " * delta)
+    )
+    lines(results[["delta"]], results[["weighted_sum"]], col = "black", lwd = 2)
+    legend("topright", legend = c("weighted sum"), fill = c("black"))
+    #dev.off()
+}
+
+realistic_sim_combined_plot <- function(bf_crit, r_val, db_file = "data/hacking-bayes.duckdb") {
+  con <- dbConnect(duckdb(), db_file)
+
+  # fixed max
+  fixed_max <- dbGetQuery(con, "
+    WITH prob_table AS (
+      SELECT MU, trial_count, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+      FROM cauchy_sym_fixed_size
+      WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+      AND trial_start = 2 AND trial_end = 1000
+      GROUP BY mu, trial_count
+      ORDER BY mu, trial_count
+    )
+    SELECT *
+    FROM prob_table p
+    WHERE prob = (
+      SELECT MAX(prob)
+      FROM prob_table p2
+      WHERE p2.mu = p.mu
+    )
+    ORDER BY mu, trial_count",
+    list(r_val, bf_crit)
+  )
+
+  # optional stop prob
+  opt_stop <- dbGetQuery(con, "
+    SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob,
+           AVG(stop_count) AS mean_count
+    FROM cauchy_sym
+    WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
+      AND trial_start = 2 AND trial_end = 100000
+    GROUP BY mu
+    ORDER BY mu",
+    list(r_val, bf_crit)
+  )
+
+  # fixed prob with interpolation
+    diff_results <- dbGetQuery(con, "
+    WITH opt AS (
+      SELECT mu, AVG(stop_count) AS avg_stop,
+             SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END)*1.0/COUNT(*) AS prob_opt
+      FROM cauchy_sym
+      WHERE ABS(r - ?) < 1e-6 AND bf_crit = ? AND trial_start = 2 AND trial_end = 100000
+      GROUP BY mu
+    ),
+    fixed AS (
+      SELECT mu, trial_count,
+             SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END)*1.0/COUNT(*) AS prob_fixed
+      FROM cauchy_sym_fixed_size
+      WHERE ABS(r - ?) < 1e-6 AND bf_crit = ? AND trial_start = 2 AND trial_end = 1000
+      GROUP BY mu, trial_count
+    ),
+    interp AS (
+      SELECT
+        o.mu AS delta,
+        o.avg_stop,
+        o.prob_opt,
+        f1.trial_count AS t1,
+        f1.prob_fixed AS p1,
+        f2.trial_count AS t2,
+        f2.prob_fixed AS p2,
+        CASE
+          WHEN f1.trial_count = f2.trial_count THEN f1.prob_fixed
+          ELSE f1.prob_fixed + (o.avg_stop - f1.trial_count) * (f2.prob_fixed - f1.prob_fixed) / (f2.trial_count - f1.trial_count)
+        END AS prob_interp
+      FROM opt o
+      JOIN fixed f1 ON ABS(f1.mu - o.mu) < 0.001 AND f1.trial_count <= o.avg_stop
+      JOIN fixed f2 ON ABS(f2.mu - o.mu) < 0.001 AND f2.trial_count >= o.avg_stop
+      WHERE f1.trial_count = (
+        SELECT MAX(trial_count)
+        FROM fixed
+        WHERE ABS(mu - o.mu) < 0.001 AND trial_count <= o.avg_stop
+      )
+      AND f2.trial_count = (
+        SELECT MIN(trial_count)
+        FROM fixed
+        WHERE ABS(mu - o.mu) < 0.001 AND trial_count >= o.avg_stop
+      )
+    )
+    SELECT delta, avg_stop, prob_opt, prob_interp
+    FROM interp
+    ORDER BY delta",
+    params = list(r_val, bf_crit, r_val, bf_crit)
+  )
+
+
+  # weighted sum
+  deltas <- dbGetQuery(con, "SELECT DISTINCT mu FROM cauchy_sym ORDER BY mu")$mu
+  weighted_results <- data.frame(delta = numeric(0), weighted_sum = numeric(0))
+  for (delta in deltas) {
+    stop_dist <- dbGetQuery(con, "
+      SELECT stop_count, COUNT(*) AS total,
+             SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS p_h0
+      FROM cauchy_sym
+      WHERE ABS(mu - ?) < 1e-6 AND ABS(r - ?) < 1e-6 AND bf_crit = ?
+        AND trial_start = 2 AND trial_end = 100000
+      GROUP BY stop_count
+      ORDER BY stop_count",
+      list(delta, r_val, bf_crit)
+    )
+    if (nrow(stop_dist) == 0) next
+
+    fixed_probs <- dbGetQuery(con, "
+      SELECT trial_count,
+             SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS p_h0_fixed
+      FROM cauchy_sym_fixed_size
+      WHERE ABS(mu - ?) < 1e-6 AND ABS(r - ?) < 1e-6 AND bf_crit = ?
+        AND trial_start = 2 AND trial_end = 1000
+        AND trial_count IN (
+          SELECT DISTINCT stop_count
+          FROM cauchy_sym
+          WHERE ABS(mu - ?) < 1e-6 AND ABS(r - ?) < 1e-6 AND bf_crit = ?
+        )
+      GROUP BY trial_count
+      ORDER BY trial_count",
+      list(delta, r_val, bf_crit, delta, r_val, bf_crit)
+    )
+    if (nrow(fixed_probs) == 0) next
+
+    merged <- merge(stop_dist, fixed_probs, by.x = "stop_count", by.y = "trial_count")
+    merged$prob_stop <- merged$total / sum(merged$total)
+    merged$weighted <- merged$prob_stop * merged$p_h0_fixed
+    weighted_results <- rbind(weighted_results, data.frame(delta = delta, weighted_sum = sum(merged$weighted)))
+  }
+
+  dbDisconnect(con)
+
+  # Plot
+  pdf(paste("figures/realistic-fixed-sim-overview-for-bfcrit-",bf_crit,"-r-",round(r_val,3),".pdf",sep=""))
+  plot(0, 0,
+       xlim = c(0, 1), ylim = c(0, 1), type = "n",
+       main = bquote("Decision probability for 'H0' with"* BF[crit] == .(bf_crit) * "r =" * .(r_val)),
+       ylab = bquote("Decision Probability for " * H[0]),
+       xlab = bquote("Effect size " * delta))
+
+  lines(fixed_max[["mu"]], fixed_max[["prob"]], col = my_colors[1], lwd = 2)
+  lines(opt_stop[["mu"]], opt_stop[["prob"]], col = my_colors[2], lwd = 2)
+  lines(diff_results[["delta"]], diff_results[["prob_interp"]], col = my_colors[3], lwd = 2)
+  lines(weighted_results[["delta"]], weighted_results[["weighted_sum"]], col = my_colors[4], lwd = 2)
+
+  legend("topright",
+         legend = c("Fixed max", "Optional stopping", "Fixed prob", "Weighted sum"),
+         col = c(my_colors[1], my_colors[2], my_colors[3], my_colors[4]),
+         lwd = 2)
+  dev.off()
+}
+
+realistic_sim_combined_plot(3, r_vals[3])
+realistic_sim_combined_plot(3, r_vals[2])
+realistic_sim_combined_plot(3, r_vals[1])
+realistic_sim_combined_plot(6, r_vals[2])
+realistic_sim_combined_plot(10, r_vals[2])
+

@@ -95,6 +95,7 @@ foreach(mu = big_sim_mus) %do% {
         }
     }
 }
+dbExecute(con, "INSERT INTO cauchy_sym_fixed_size SELECT * FROM cauchy_sym_fixed_size_r WHERE ABS(r-0.3535534) < 1e-6 OR ABS(r - 1.4142136) <1e-6")
 dbDisconnect(con)
 
 con <- dbConnect(duckdb(), "data/hacking-bayes.duckdb") # WIP!!!!!!
@@ -116,6 +117,8 @@ foreach(mu = big_sim_mus) %do% {
         }
     }
 }
+# dbExecute(con, "INSERT INTO cauchy_sym_fixed_size SELECT * FROM cauchy_sym_fixed_size_bf_crit WHERE bf_crit = 6 OR bf_crit = 10")
+# dbExecute(con, "DROP TABLE cauchy_sym_fixed_size_bf_crit")
 dbDisconnect(con)
 # # Stop the parallel backend
 stopImplicitCluster()
