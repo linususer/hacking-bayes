@@ -42,7 +42,7 @@ simulate_fixed_size <- function(mu, r, BF_crit, repetitions, trial_start = 2, tr
             }
             results[[(i - 1) * trial_end + (trial_count - 1)]] <- list(decision = decision, trial_count = trial_count, bf = BF, mu = mu, bf_crit = BF_crit, r = r, trial_start = trial_start, trial_end = trial_end)
             if (high_density) {
-                ifelse(trial_count < 50, trial_count <- trial_count + 1, trial_count + 5)
+                ifelse(trial_count < 50, trial_count <- trial_count + 1, trial_count <- trial_count + 5)
             } else {
                 trial_count <- trial_count + 5
             }
