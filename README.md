@@ -53,7 +53,7 @@ hacking-bayes
             -> Visualisation tree for the specific coinflip example for Steele (2013)
 ```
 
-The simulation data of the main results of the simulations is provided under <linus-szillat.de/ressources/hacking-bayes.duckdb>.
+The simulation data of the main results of the simulations is provided under <https://linus-szillat.de/ressources/hacking-bayes.duckdb>.
 
 The database is structured in these tables:
 
