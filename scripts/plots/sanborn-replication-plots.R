@@ -1,10 +1,7 @@
 setwd("/home/linus/git/lab-project")
-# clear workspace
 rm(list = ls())
 source("scripts/plots/define_colors.R")
 
-# Plot the decision cumulative decision probability for preferred hypothesis H0
-# dependent on number of trials n
 plotSanbornSim <- function(df_lst, bf_crit, file, sym = FALSE) {
     pdf(file)
     plot(0, 0,
@@ -36,7 +33,6 @@ plotSanbornSim <- function(df_lst, bf_crit, file, sym = FALSE) {
                 stop_probs <- c(stop_probs, stop_prob)
             }
             lines(1:max_count_stop, cumsum(stop_probs), col = my_colors[2])
-            # Extend the plot beyond max_count_stop
             if (max_count_stop < 100) {
                 lines(max_count_stop:100, rep(cumsum(stop_probs)[max_count_stop], 101 - max_count_stop), col = my_colors[2])
             }
@@ -68,9 +64,7 @@ plotSanbornProbs <- function(df_list, file) {
 ##### LOAD DATA #####
 #####################
 
-# Open a connection to the duckdb
 con <- dbConnect(duckdb(), "data/results.duckdb", read_only = TRUE)
-# Load the data
 asym_heads <- list()
 asym_heads[[1]] <- dbGetQuery(con, "SELECT * FROM sanborn_replication
                                     WHERE p0 = 0.75
