@@ -264,20 +264,20 @@ def plot_tree_plotly(tree):
             node_color.append('black')
         elif tree[n]['stopped']:
             node_color.append('orange')
-            # if tree[n]['decision'] == "p1":
-            #     # Add independent text (right side of node)
-            #     text_x.append(x + x_offset)      # Offset right
-            #     text_y.append(y - y_offset)      # Slight Y adjustment
-            #     text_labels.append(f"-")
-            # elif tree[n]['decision'] == "p2":
-            #     # Add independent text (right side of node)
-            #     text_x.append(x + x_offset)      # Offset right
-            #     text_y.append(y - y_offset)      # Slight Y adjustment
-            #     text_labels.append(f"+")
-            # else:
-            #     text_x.append(x + x_offset)      # Offset right
-            #     text_y.append(y - y_offset)      # Slight Y adjustment
-            #     text_labels.append(f"?")
+            if tree[n]['decision'] == "p1":
+                # Add independent text (right side of node)
+                text_x.append(x + x_offset)      # Offset right
+                text_y.append(y - y_offset)      # Slight Y adjustment
+                text_labels.append(f"-")
+            elif tree[n]['decision'] == "p2":
+                # Add independent text (right side of node)
+                text_x.append(x + x_offset)      # Offset right
+                text_y.append(y - y_offset)      # Slight Y adjustment
+                text_labels.append(f"+")
+            else:
+                text_x.append(x + x_offset)      # Offset right
+                text_y.append(y - y_offset)      # Slight Y adjustment
+                text_labels.append(f"?")
         else:
             node_color.append('#59B3E6')
 
@@ -307,17 +307,17 @@ def plot_tree_plotly(tree):
                                 ))
     
     # comment out for no decision boxes
-    fig = draw_decision_box(fig, tree, pos, nodes, prob="p1", layer=5, padding=0.3, dash = "solid")
-    fig = draw_decision_box(fig, tree, pos, nodes, prob="p2", layer=5, padding=0.3, dash = "solid")
-    fig = draw_decision_box(fig, tree, pos, nodes, prob="indecisive", layer=5, padding=0.3, dash = "solid")
+    # fig = draw_decision_box(fig, tree, pos, nodes, prob="p1", layer=5, padding=0.3, dash = "solid")
+    # fig = draw_decision_box(fig, tree, pos, nodes, prob="p2", layer=5, padding=0.3, dash = "solid")
+    # fig = draw_decision_box(fig, tree, pos, nodes, prob="indecisive", layer=5, padding=0.3, dash = "solid")
 
-    fig = draw_decision_box(fig, tree, pos, nodes, prob="p1", layer=2, padding=0.3, dash = "dash", label_p1="R'", label_p2="A'", label_ind="I'")
-    fig = draw_decision_box(fig, tree, pos, nodes, prob="p2", layer=2, padding=0.3, dash = "dash", label_p1="R'", label_p2="A'", label_ind="I'")
-    fig = draw_decision_box(fig, tree, pos, nodes, prob="indecisive", layer=2, padding=0.3, dash = "dash", label_p1="R'", label_p2="A'", label_ind="I'")
+    # fig = draw_decision_box(fig, tree, pos, nodes, prob="p1", layer=2, padding=0.3, dash = "dash", label_p1="R'", label_p2="A'", label_ind="I'")
+    # fig = draw_decision_box(fig, tree, pos, nodes, prob="p2", layer=2, padding=0.3, dash = "dash", label_p1="R'", label_p2="A'", label_ind="I'")
+    # fig = draw_decision_box(fig, tree, pos, nodes, prob="indecisive", layer=2, padding=0.3, dash = "dash", label_p1="R'", label_p2="A'", label_ind="I'")
 
-    my_path = [0, 1, 3, 7, 12, 18]
+    #my_path = [0, 1, 3, 7, 12, 18]
     # comment out if no path should be colored
-    fig = add_path_edges(fig, tree, pos, my_path, width=4)
+    #fig = add_path_edges(fig, tree, pos, my_path, width=4)
     fig.update_layout(
         title="",
         showlegend=False,
@@ -385,24 +385,23 @@ def print_table(tree):
 
 # Example
 # n = 7
-coinflips = 5
-p1 = 0.5
-p2 = 0.6
-bf_crit = 1.33
+coinflips = 10
+p1 = 0.3
+p2 = 0.8
+bf_crit = 6
 #bf_crit2 = 1 / 1.05
 
 tree = create_tree(coinflips, p1, p2)
 #fig_tree = plot_tree_plotly(tree)
 #fig_tree.write_image("figures/report/steele_replication_plain_tree.pdf")
 other_tree = create_tree(coinflips, p1, p2)
-fixed_tree = apply_fixed_sample_size_test(tree, coinflips = coinflips, bf_crit=bf_crit)
-fixed_tree = apply_fixed_sample_size_test(tree, coinflips= 2, bf_crit=bf_crit)
-print_table(tree)
-fixed_fig = plot_tree_plotly(fixed_tree)
-fixed_fig.write_image("figures/report/crossover_visualisation.pdf")
+#fixed_tree = apply_fixed_sample_size_test(tree, coinflips = coinflips, bf_crit=bf_crit)
+#print_table(tree)
+#fixed_fig = plot_tree_plotly(fixed_tree)
+#fixed_fig.write_image("figures/report/crossover_visualisation.pdf")
 opt_stop_tree = apply_optional_stopping(other_tree, coinflips=coinflips, bf_crit=bf_crit)
 print("\nAfter applying optional stopping:\n")
 #print_tree(opt_stop_tree)
-print_table(opt_stop_tree)
-#fig = plot_tree_plotly(opt_stop_tree)
+#print_table(opt_stop_tree)
+fig = plot_tree_plotly(opt_stop_tree)
 

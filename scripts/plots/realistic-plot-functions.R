@@ -265,29 +265,81 @@ realistic_sim_histograms <- function(bf_crit, mus, r_val) {
 }
 
 realistic_sim_decision_prob_curve <- function(bf_crit, r_val) {
+
   con <- dbConnect(duckdb(), db_file)
-  # Decision probability for H0 given mu
+
   r_text <- round(r_val, 3)
-  pdf(paste("figures/realistic-sim-decision-prob-bf-crit2-", bf_crit, "-r-", r_text, ".pdf", sep = ""), width = 14, height = 8)
-  par(mar = c(5, 6, 5, 5))
-  plot(0, 0,
-    xlim = c(0, 1), ylim = c(0, 1), type = "n",
-    main = bquote("Decision probability for " * H[0] * " with " * BF[crit] * " = " * .(bf_crit) * " and " * r * " = " * .(r_text)),
-    ylab = bquote("Decision Probability for " * H[0]), xlab = bquote(delta),
-    cex.axis = 2, cex.lab = 2, cex.main = 2
+
+  pdf(
+    paste0(
+      "figures/realistic-sim-decision-prob-bf-crit2-",
+      bf_crit, "-r-", r_text, ".pdf"
+    ),
+    width = 14, height = 8
   )
+
+  par(mar = c(5, 7, 5, 7))  # extra space for both y-axes
+
   long_range <- dbGetQuery(
-    con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
-                FROM cauchy_sym
-                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-                AND trial_start = 2 AND trial_end = 100000
-                GROUP BY mu
-                ORDER BY mu",
-    list(r_vals[2], BF_crits[1])
+    con,
+    "
+    SELECT
+      mu,
+      COUNT(*) AS n_total,
+      COUNT(CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
+    FROM cauchy_sym
+    WHERE ABS(? - r) < 1e-6
+      AND bf_crit = ?
+      AND trial_start = 2
+      AND trial_end = 100000
+    GROUP BY mu
+    ORDER BY mu
+    ",
+    list(r_val, bf_crit)
   )
-  # get the first index where the probability is smaller than 0.5
-  lines(long_range[["mu"]], long_range[["prob"]], col = "black", lwd = 5)
+
+  # total simulations per mu (assumed constant)
+  N <- unique(long_range$n_total)
+
+  ## ---- Base plot (probability scale) ----
+  plot(
+    long_range$mu, long_range$prob,
+    type = "l", lwd = 5, col = "black",
+    yaxt = "n",
+    xlim = c(0, 1), ylim = c(0, 1),
+    xlab = bquote("Korrelationsstärke " * delta),
+    ylab = "",
+    cex.axis = 1.8,
+    cex.lab = 2,
+    cex.main = 2
+  )
+
+  ## ---- Right axis: probability ----
+  axis(
+    side = 4,
+    at = seq(0, 1, by = 0.1),
+    labels = paste0(seq(0, 100, by = 10), "%"),
+    cex.axis = 1.8
+  )
+  mtext(
+    bquote("Entscheidungswahrscheinlichkeit für Hypothese " * H[0]),
+    side = 4, line = 4, cex = 2
+  )
+  ## ---- Left axis: absolute counts ----
+  axis(
+    side = 2,
+    at = seq(0, 1, by = 0.1),
+    labels = seq(0, N, by = N / 10),
+    cex.axis = 1.8
+  )
+  mtext(
+    bquote("Entscheidungen für Hypothese " * H[0]),
+    side = 2, line = 4, cex = 2
+  )
+
+  box()
+
   dev.off()
   dbDisconnect(con)
 }
-realistic_sim_decision_prob_curve(3, r_vals[2])
+realistic_sim_decision_prob_curve(bf_crit = 3, r_val = 1 / sqrt(2))

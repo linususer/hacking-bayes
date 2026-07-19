@@ -3,27 +3,29 @@ setwd("/home/linus/git/hacking-bayes")
 rm(list = ls())
 source("scripts/plots/define_colors.R")
 freq_optional_stopping <- function() {
-    set.seed(400)
+    # set.seed(400)
     # draw data from normal distribution and perform two-sided t-test
     # until p-value is below 0.05 and plot p-values
     # there is no effect, but the p-value becomes significant
     data <- rnorm(2, mean = 0, sd = 1)
     p_val <- c()
-    while (t.test(data)$p.value > 0.05) {
+    count <- 2
+    while (count <= 2000) {
         data <- c(data, rnorm(1, mean = 0, sd = 1))
         p_val <- c(p_val, t.test(data)$p.value)
         # print(length(data))
+        count <- count + 1
     }
     # plot p-values
     pdf("figures/frequentistic-optional-stopping.pdf")
     plot(p_val,
         type = "l", col = "black", lwd = 4, xlab = "Sample Size", ylab = "p-value",
-        main = "Frequentistic Optional Stopping",
+        main = "Standard Frequentist t-test", xlim = c(0,2000), ylim = c(0, 1),
         cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
     )
-    points(length(p_val), t.test(data)$p.value, col = "black", pch = 4, cex = 2, lwd = 4)
+    # points(length(p_val), t.test(data)$p.value, col = "black", pch = 4, cex = 2, lwd = 4)
     # add significance threshold with text
-    text(0, 0.075, "Significance Threshold p = 0.05", pos = 4, col = "black")
+    text(1170, 0.075, "Significance threshold p = 0.05", pos = 4, col = "black")
     abline(h = 0.05, col = "black", lty = 2, lwd = 4)
     dev.off()
 }
@@ -37,24 +39,27 @@ bayes_optional_stopping <- function() {
     data <- rnorm(1, mean = 0, sd = 1)
     bf <- bf10(length(data), mean(data), prior_var = 1)
     bf_list <- c(bf)
-    while (bf > bf_crit1 && bf < bf_crit2) {
+    count <- 1
+    while (count <= 2000) {
         data <- c(data, rnorm(1, mean = 0, sd = 1))
         bf <- bf10(length(data), mean(data), prior_var = 1)
         bf_list <- c(bf_list, bf)
+        count <- count + 1
     }
     # plot Bayes factors
     pdf("figures/bayesian-optional-stopping.pdf")
     plot(bf_list,
-        type = "l", col = "#59B3E6",
-        main = "Bayesian Optional Stopping",
-        lwd = 2, xlab = "Sample Size", ylab = "Bayes Factor", ylim = c(1 / 3, 3)
+        type = "l", col = "#000",
+        main = "Bayesian t-test",
+        lwd = 4, xlab = "Sample Size", ylab = "Bayes Factor", xlim = c(0,2000),
+        ylim = c(0, 3), cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
     )
-    points(length(bf_list), bf, col = "#59B3E6", pch = 4, cex = 2, lwd = 2)
+    # points(length(bf_list), bf, col = "#59B3E6", pch = 4, cex = 2, lwd = 2)
     # add BF crit thresholds with text
     abline(h = 3, col = "black", lty = 2, lwd = 2)
     abline(h = 1 / 3, col = "black", lty = 2, lwd = 2)
-    text(0.6, 2.9, bquote(BF[crit] * " = 3"), pos = 4, col = "black")
-    text(0.6, 0.4, bquote(BF[crit] * " = 1/3"), pos = 4, col = "black")
+    text(1170, 2.9, bquote(BF[crit] * " = 3"), pos = 4, col = "black")
+    text(1170, 0.4, bquote(BF[crit] * " = 1/3"), pos = 4, col = "black")
     dev.off()
 }
 
@@ -132,7 +137,7 @@ point_and_cauchy_prior <- function() {
     # double the font size
     plot(0, 0,
         xlim = c(-3, 3), ylim = c(0, 0.5), type = "n",
-        main = "Point Prior vs Cauchy Prior",
+        # main = "Point Prior vs Cauchy Prior",
         ylab = "", xlab = bquote("Effect Size " * delta),
         cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
     )
@@ -143,13 +148,13 @@ point_and_cauchy_prior <- function() {
     points(0, 0.5, col = "#CD1076", pch = 19, cex = 2)
     lines(c(0, 0), y = c(0, 0.5), col = "#CD1076", lwd = 4)
     cauchy_at_0 <- dcauchy(0, 0, 1 / sqrt(2))
-    points(0, cauchy_at_0, col = "black", pch = 4, cex = 2) #
+    # points(0, cauchy_at_0, col = "black", pch = 4, cex = 2) #
     arrows(x0 = 0, x1 = 1 / sqrt(2), y0 = dcauchy(1 / sqrt(2)), y1 = dcauchy(1 / sqrt(2)), length = 0.15, lwd = 4)
-    text(x = 1 / (2 * sqrt(2)), y = dcauchy(1/sqrt(2)) + 0.02, label = "r")
-    legend("topleft",legend=c(bquote(H[0]: delta == 0), bquote(H[1]: delta %~% Cauchy(r))),fill = c("#CD1076", "#59B3E6"))
+    text(x = 1 / (2 * sqrt(2)) - 0.05, y = dcauchy(1 / sqrt(2)) + 0.03, label = "r")
+    legend("topleft", legend = c(bquote(H[0]:delta == 0), bquote(H[1]:delta %~% Cauchy(r))), fill = c("#CD1076", "#59B3E6"))
+    text(x = 2.5, y = 0.45, labels = bquote(BF["01"] == frac(p(data * " | " * H[0]), p(data * " | " * H[1]))))
     dev.off()
 }
-
 
 bf01_var_plot <- function(ns, mu, vars, prior_var) {
     source("bayes-factor-functions.R")
@@ -176,6 +181,7 @@ bf01_var_plot <- function(ns, mu, vars, prior_var) {
     )
     dev.off()
 }
+
 
 bf01_prior_var_plot <- function(ns, mu, true_var, prior_vars) {
     source("bayes-factor-functions.R")

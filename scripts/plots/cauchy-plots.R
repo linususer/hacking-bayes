@@ -75,7 +75,7 @@ plotProbWithBFCritBounds <- function(mu) {
     con <- dbConnect(duckdb(), db_file, read_only = TRUE)
     # Plot the decision probability for H0 given mu
     # x-axis: mu, y-axis: BF_crit
-    # pdf(paste("figures/realistic-sym-decision-prob-mu-", mu, "-bf-crits.pdf", sep = ""))
+     pdf(paste("figures/realistic-sym-decision-prob-mu-", mu, "-bf-crits.pdf", sep = ""))
     r2_prob <- sapply(BF_crits, function(bf_crit) {
         as.numeric(dbGetQuery(con, "SELECT COUNT(*) FROM cauchy_sym
                                 WHERE ABS((1 / SQRT(2)) - r) < 1e-6
