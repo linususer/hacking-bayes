@@ -25,7 +25,7 @@ get_opt_stop <- function(con, bf_crit, r_val, decision = 0) {
            AVG(stop_count) AS mean_count
     FROM cauchy_sym
     WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-      AND trial_start = 2 AND trial_end = 100000
+      AND trial_start = 20 AND trial_end = 200
     GROUP BY mu
     ORDER BY mu",
     list(decision, r_val, bf_crit)
@@ -99,7 +99,7 @@ get_fixed_opt_avg <- function(con, bf_crit, r_val, decision = 0) {
       SELECT mu, AVG(stop_count) AS avg_stop,
              SUM(CASE WHEN decision = ? THEN 1 END)*1.0/COUNT(*) AS prob_opt
       FROM cauchy_sym
-      WHERE ABS(r - ?) < 1e-6 AND bf_crit = ? AND trial_start = 2 AND trial_end = 100000
+      WHERE ABS(r - ?) < 1e-6 AND bf_crit = ? AND trial_start = 20 AND trial_end = 200
       GROUP BY mu
     ),
     fixed AS (

@@ -39,7 +39,7 @@ simulate_fixed_size <- function(mu, r, BF_crit, repetitions, trial_start = 2, tr
                               mu = mu, bf_crit = BF_crit, r = r,
                               trial_start = trial_start, trial_end = trial_end)
       idx <- idx + 1
-      trial_count <- if (high_density && trial_count < 50) trial_count + 1 else trial_count + 5
+      trial_count <- if (high_density && trial_count < 100) trial_count + 1 else trial_count + 5
     }
   }
   end <- Sys.time()
@@ -77,13 +77,13 @@ r_vals   <- c(0.5, 1, 2) / sqrt(2)
 BF_crits <- c(3)
 
 fixed_trial_start    <- 2
-fixed_trial_end      <- 50
+fixed_trial_end      <- 1000
 fixed_repetitions    <- 10000
 fixed_chunk_size     <- 500
 fixed_chunks         <- 1:(fixed_repetitions / fixed_chunk_size)
 
-optional_trial_start <- 20
-optional_trial_end   <- 200
+optional_trial_start <- 2
+optional_trial_end   <- 100000
 optional_repetitions <- 20000
 optional_chunk_size  <- 2000
 optional_chunks      <- 1:(optional_repetitions / optional_chunk_size)
@@ -93,10 +93,10 @@ optional_chunks      <- 1:(optional_repetitions / optional_chunk_size)
 con <- dbConnect(duckdb(), "data/large_effects.duckdb")
 
 dbExecute(con, "DROP TABLE IF EXISTS fixed_size_large_effect")
-dbExecute(con, "CREATE TABLE fixed_size_large_effect (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
+dbExecute(con, "CREATE TABLE cauchy_sym_fixed (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
 
 dbExecute(con, "DROP TABLE IF EXISTS optional_stopping_large_effect")
-dbExecute(con, "CREATE TABLE optional_stopping_large_effect (decision INTEGER, stop_count INTEGER, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
+dbExecute(con, "CREATE TABLE cauchy_sym (decision INTEGER, stop_count INTEGER, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
 
 foreach(mu = mus) %do% {
   foreach(r = r_vals) %do% {
