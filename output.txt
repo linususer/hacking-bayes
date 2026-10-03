@@ -1,8 +1,0 @@
-.
-├── data
-├── figures
-└── scripts
-    ├── calculations
-    └── plots
-
-5 directories
