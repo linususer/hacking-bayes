@@ -1,5 +1,5 @@
 # Example of two added binomial distributions with p=0.25 and p=0.75 plotted
-pdf("figures/binom-example.pdf")
+pdf("thesis/figures/binom-example.pdf")
 plot(
     x = 0:20,
     y = dbinom(0:20, 20, 0.25),
@@ -27,7 +27,7 @@ dev.off()
 
 # Example of two added binomial distributions with p=0.25 and p=0.75 plotted but only weighted with 0.5
 
-pdf("figures/binom-example-weighted.pdf")
+pdf("thesis/figures/binom-example-weighted.pdf")
 plot(
     x = 0:20,
     y = 0.5 * dbinom(0:20, 20, 0.25) + 0.5 * dbinom(0:20, 20, 0.75),
@@ -41,7 +41,7 @@ plot(
 dev.off()
 
 # Weighted example with 0.25 and 0.75 in comparison to 0.5
-pdf("figures/binom-example-weighted-comp.pdf")
+pdf("thesis/figures/binom-example-weighted-comp.pdf")
 plot(
     x = 0:20,
     y = dbinom(0:20, 20, 0.5),

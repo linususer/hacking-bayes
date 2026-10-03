@@ -1,6 +1,6 @@
-setwd("/home/linus/git/lab-project")
+setwd(".")
 rm(list = ls())
-source("scripts/plots/define_colors.R")
+source("shared/define_colors.R")
 
 plotSanbornSim <- function(df_lst, bf_crit, file, sym = FALSE) {
     pdf(file)
@@ -160,12 +160,12 @@ dbDisconnect(con)
 #####################
 ##### PLOT DATA #####
 #####################
-plotSanbornSim(asym_all_comp, bf_crit = 10, "figures/sanborn-asym-all-comp-decision-prob.pdf")
-plotSanbornSim(asym_heads, bf_crit = 10, "figures/sanborn-asym-heads-decision-prob.pdf")
-plotSanbornSim(asym_comp, bf_crit = 10, "figures/sanborn-asym-comp-decision-prob.pdf")
-plotSanbornSim(asym_alt_comp, bf_crit = 10, "figures/sanborn-asym-alt-comp-decision-prob.pdf")
-plotSanbornSim(sym_heads, bf_crit = 10, "figures/sanborn-sym-heads-decision-prob.pdf", sym = TRUE)
-plotSanbornSim(sym_comp, bf_crit = 10, "figures/sanborn-sym-comp-decision-prob.pdf", sym = TRUE)
-plotSanbornSim(sym_alt_comp, bf_crit = 10, "figures/sanborn-sym-alt-comp-decision-prob.pdf", sym = TRUE)
+plotSanbornSim(asym_all_comp, bf_crit = 10, "old/lab-project/figures/sanborn-asym-all-comp-decision-prob.pdf")
+plotSanbornSim(asym_heads, bf_crit = 10, "old/lab-project/figures/sanborn-asym-heads-decision-prob.pdf")
+plotSanbornSim(asym_comp, bf_crit = 10, "old/lab-project/figures/sanborn-asym-comp-decision-prob.pdf")
+plotSanbornSim(asym_alt_comp, bf_crit = 10, "old/lab-project/figures/sanborn-asym-alt-comp-decision-prob.pdf")
+plotSanbornSim(sym_heads, bf_crit = 10, "old/lab-project/figures/sanborn-sym-heads-decision-prob.pdf", sym = TRUE)
+plotSanbornSim(sym_comp, bf_crit = 10, "old/lab-project/figures/sanborn-sym-comp-decision-prob.pdf", sym = TRUE)
+plotSanbornSim(sym_alt_comp, bf_crit = 10, "old/lab-project/figures/sanborn-sym-alt-comp-decision-prob.pdf", sym = TRUE)
 
-plotSanbornProbs(sanborn_probs, "figures/sanborn-probs.pdf")
+plotSanbornProbs(sanborn_probs, "old/lab-project/figures/sanborn-probs.pdf")

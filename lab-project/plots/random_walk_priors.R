@@ -2,7 +2,7 @@ library(BayesFactor)
 
 point_and_point_prior <- function() {
   # plot point prior^2
-  pdf("figures/report/point-prior-and-point-prior.pdf", width = 8, height = 4)
+  pdf("lab-project/figures/report/point-prior-and-point-prior.pdf", width = 8, height = 4)
   # double the font size
   plot(0, 0,
     xlim = c(0, 1), ylim = c(0, 1), type = "n",
@@ -52,7 +52,7 @@ fixed_opt_random_walk <- function() {
   print(paste(length(x), length(bf_fixed), length(bf_opt), length(res_opt), sep=" "))
   print(tail(bf_fixed))
   print(tail(bf_opt))
-  pdf("figures/report/fixed-and-optional-stopping-random-walk.pdf", height = 8, width = 12)
+  pdf("lab-project/figures/report/fixed-and-optional-stopping-random-walk.pdf", height = 8, width = 12)
   par(mar = c(5, 5, 5, 5))
   plot(2:n_max, bf_fixed, type = "l", xlab = "number of trials n", ylab = bquote("Bayes Factor " * BF["01"]), col = "orange",
   ylim = c(0,3.5), xlim = c(0,50), lwd = 5, lty = 4, cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5,

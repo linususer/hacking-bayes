@@ -1,8 +1,8 @@
-setwd("/home/linus/git/hacking-bayes")
+setwd(".")
 # clear workspace
 rm(list = ls())
 # import bf
-source("bayes-factor-functions.R")
+source("old/thesis/bayes-factor-functions.R")
 
 # load libraries
 library(data.table)

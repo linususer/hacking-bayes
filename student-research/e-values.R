@@ -234,13 +234,13 @@ for (i in seq_along(deltaMins)) {
 }
 
 # Write summary to file in tab-separated format (matching other summaries)
-summary_path <- "/home/x/git/hacking-bayes/summaries/e-values-summary.txt"
+summary_path <- "student-research/summaries/e-values-summary.txt"
 summary_df <- do.call(rbind, summary_rows)
 write.table(summary_df, summary_path, sep = "\t", quote = TRUE, row.names = FALSE)
 cat("Summary written to:", summary_path, "\n")
 
 # Save data as R data object
-data_path <- "/home/x/git/hacking-bayes/data/e-values-simulation.RData"
+data_path <- "data/e-values-simulation.RData"
 save(all_results, alpha, beta, n_max, deltaMins, file = data_path)
 cat("Data saved to:", data_path, "\n")
 
@@ -248,7 +248,7 @@ cat("Data saved to:", data_path, "\n")
 print(summary_df)
 
 # Ensure summaries directory exists relative to hacking-bayes
-dir.create("summaries", showWarnings = FALSE, recursive = TRUE)
+dir.create("student-research/summaries", showWarnings = FALSE, recursive = TRUE)
 
 ##################################################
 ######## Simulation for fixed delta test design ##
@@ -269,7 +269,7 @@ designObj_fixed <- designSafeT(
 )
 
 # Ensure summaries directory exists
-dir.create("summaries", showWarnings = FALSE, recursive = TRUE)
+dir.create("student-research/summaries", showWarnings = FALSE, recursive = TRUE)
 
 # ==============================================================================
 # 1. Extended Optional Stopping (Incremental Data Generation)
@@ -545,7 +545,7 @@ for (trueDelta in trueDeltas) {
   sum_df <- summarize_walks(replications, trueDelta = trueDelta)
   all_summaries[[as.character(trueDelta)]] <- sum_df
   
-  plot_file <- sprintf("summaries/walks-plot-standard-trueDelta-%.2f.pdf", trueDelta)
+  plot_file <- sprintf("student-research/summaries/walks-plot-standard-trueDelta-%.2f.pdf", trueDelta)
   plot_walk_summary(
     sum_df, 
     eCrit_upper = eCrit1, eCrit_lower = eCrit0,
@@ -556,8 +556,8 @@ for (trueDelta in trueDeltas) {
 
 # Export combined summary
 final_standard_summary <- do.call(rbind, all_summaries)
-write.table(final_standard_summary, "summaries/extended-opt-stop-summary.txt", sep = "\t", row.names = FALSE)
-cat("\n=> Saved Extended Optional Stopping summary to: summaries/extended-opt-stop-summary.txt\n")
+write.table(final_standard_summary, "student-research/summaries/extended-opt-stop-summary.txt", sep = "\t", row.names = FALSE)
+cat("\n=> Saved Extended Optional Stopping summary to: student-research/summaries/extended-opt-stop-summary.txt\n")
 
 
 # ==============================================================================
@@ -589,7 +589,7 @@ for (trueDelta in c(0)) {
   sum_df_asym <- summarize_walks(replications_asym, trueDelta = trueDelta)
   all_asym_summaries[[as.character(trueDelta)]] <- sum_df_asym
 
-  plot_file <- sprintf("summaries/walks-plot-asym-n-%.2f.pdf", n_max)
+  plot_file <- sprintf("student-research/summaries/walks-plot-asym-n-%.2f.pdf", n_max)
   plot_walk_summary(
     sum_df_asym,
     eCrit_upper = asym_upper, eCrit_lower = asym_lower,
@@ -599,11 +599,10 @@ for (trueDelta in c(0)) {
   )
 }
 }
-safeTTest()
 final_asym_summary <- do.call(rbind, all_asym_summaries)
-write.table(final_asym_summary, "summaries/asym-opt-stop-summary.txt",
+write.table(final_asym_summary, "student-research/summaries/asym-opt-stop-summary.txt",
             sep = "\t", row.names = FALSE)
-cat("\n=> Saved Asymmetrical Threshold summary to: summaries/asym-opt-stop-summary.txt\n")
+cat("\n=> Saved Asymmetrical Threshold summary to: student-research/summaries/asym-opt-stop-summary.txt\n")
 # ==============================================================================
 # 4. Fixed-n Simulation: decision counts for drawn sample sizes n = 2 ... 100
 # ==============================================================================
@@ -769,11 +768,11 @@ fixed_n_summary_0 <- simulate_fixed_n(
   trueDelta = 0,
   sample_sizes = 10:1000,
   n_reps = 500,
-  summary_path = "summaries/fixed-n-summary-trueDelta-0.00-own.txt"
+  summary_path = "student-research/summaries/fixed-n-summary-trueDelta-0.00-own.txt"
 )
 plot_fixed_n_summary(
   fixed_n_summary_0,
-  filename = "summaries/fixed-n-plot-trueDelta-0.00-own.png"
+  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.00-own.png"
 )
  
 # --- True Delta = 0.1 ---
@@ -783,11 +782,11 @@ fixed_n_summary_01 <- simulate_fixed_n(
   trueDelta = 0.1,
   sample_sizes = 2:1000,
   n_reps = 500,
-  summary_path = "summaries/fixed-n-summary-trueDelta-0.10-own.txt"
+  summary_path = "student-research/summaries/fixed-n-summary-trueDelta-0.10-own.txt"
 )
 plot_fixed_n_summary(
   fixed_n_summary_01,
-  filename = "summaries/fixed-n-plot-trueDelta-0.10-own.png"
+  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.10-own.png"
 )
  
 # --- True Delta = 0.2 ---
@@ -797,11 +796,11 @@ fixed_n_summary_02 <- simulate_fixed_n(
   trueDelta = 0.2,
   sample_sizes = 2:1000,
   n_reps = 500,
-  summary_path = "summaries/fixed-n-summary-trueDelta-0.20-own.txt"
+  summary_path = "student-research/summaries/fixed-n-summary-trueDelta-0.20-own.txt"
 )
 plot_fixed_n_summary(
   fixed_n_summary_02,
-  filename = "summaries/fixed-n-plot-trueDelta-0.20-own.png"
+  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.20-own.png"
 )
  
 # --- True Delta = 0.3 ---
@@ -811,11 +810,11 @@ fixed_n_summary_03 <- simulate_fixed_n(
   trueDelta = 0.3,
   sample_sizes = 2:1000,
   n_reps = 500,
-  summary_path = "summaries/fixed-n-summary-trueDelta-0.30-own.txt"
+  summary_path = "student-research/summaries/fixed-n-summary-trueDelta-0.30-own.txt"
 )
 plot_fixed_n_summary(
   fixed_n_summary_03,
-  filename = "summaries/fixed-n-plot-trueDelta-0.30-own.png"
+  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.30-own.png"
 )
  
 # --- True Delta = 0.42 ---
@@ -825,11 +824,11 @@ fixed_n_summary_04 <- simulate_fixed_n(
   trueDelta = 0.42,
   sample_sizes = 10:1000,
   n_reps = 500,
-  summary_path = "summaries/fixed-n-summary-trueDelta-0.42-own.txt"
+  summary_path = "student-research/summaries/fixed-n-summary-trueDelta-0.42-own.txt"
 )
 plot_fixed_n_summary(
   fixed_n_summary_04,
-  filename = "summaries/fixed-n-plot-trueDelta-0.42-own.png"
+  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.42-own.png"
 )
  
 # --- True Delta = 0.5 ---
@@ -839,11 +838,11 @@ fixed_n_summary_05 <- simulate_fixed_n(
   trueDelta = 0.5,
   sample_sizes = 2:1000,
   n_reps = 500,
-  summary_path = "summaries/fixed-n-summary-trueDelta-0.50-own.txt"
+  summary_path = "student-research/summaries/fixed-n-summary-trueDelta-0.50-own.txt"
 )
 plot_fixed_n_summary(
   fixed_n_summary_05,
-  filename = "summaries/fixed-n-plot-trueDelta-0.50-own.png"
+  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.50-own.png"
 )
  
 # Export combined summary (all true deltas)
@@ -855,6 +854,6 @@ final_fixed_n_summary <- rbind(
   fixed_n_summary_04,
   fixed_n_summary_05
 )
-write.table(final_fixed_n_summary, "summaries/fixed-n-summary-own.txt",
+write.table(final_fixed_n_summary, "student-research/summaries/fixed-n-summary-own.txt",
             sep = "\t", quote = TRUE, row.names = FALSE)
-cat("\n=> Saved combined fixed-n summary to: summaries/fixed-n-summary.txt\n")
+cat("\n=> Saved combined fixed-n summary to: student-research/summaries/fixed-n-summary.txt\n")

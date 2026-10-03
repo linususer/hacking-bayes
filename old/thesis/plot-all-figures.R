@@ -1,13 +1,13 @@
 # clear workspace
 rm(list = ls())
-setwd("/home/linus/git/hacking-bayes")
+setwd(".")
 # Every function call corresponds to one figure in the paper
 
 #######################
 ### Catch-Up-Effect ###
 #######################
 
-source("scripts/plots/catch-up-effect-plot-functions.R")
+source("thesis/plots/catch-up-effect-plot-functions.R"); source("old/thesis/normal-prior-plot-functions.R")
 # Figure 1 - Frequentistic Optional Stopping
 freq_optional_stopping()
 print("Figure 1 done")
@@ -20,14 +20,14 @@ print("Figure 3 done")
 # Figure 4 - Idealized Setting - BF01 depending on n and mu - logscale
 ns <- 10^seq(0, 4, 0.001)
 mus <- c(0.1, 0.2, 0.5, 0.8, 1)
-bf01_mus_plot(ns, mus, true_var = 1, prior_var = 1, logscale = TRUE, file_name = "figures/bf01-compare-mus-logscale.pdf")
+bf01_mus_plot(ns, mus, true_var = 1, prior_var = 1, logscale = TRUE, file_name = "old/thesis/figures/bf01-compare-mus-logscale.pdf")
 print("Figure 4 done")
 # Figure 5 - Realistic Setting - Point prior vs Cauchy prior
 point_and_cauchy_prior()
 print("Figure 5 done")
 # Figure 7 - Catch-Up Effect - Minimum everywhere except \Bar{y} = 0
 ns <- 1:10000
-bf01_mus_plot(ns, mus = c(0), true_var = 1, prior_var = 1, file_name = "figures/bf01-minimum-everywhere-except-mu-0.pdf", ylim = c(0, 100))
+bf01_mus_plot(ns, mus = c(0), true_var = 1, prior_var = 1, file_name = "old/thesis/figures/bf01-minimum-everywhere-except-mu-0.pdf", ylim = c(0, 100))
 print("Figure 7 done")
 # Figure 8 - Catch-Up Effect - Comparing different true variances
 ns <- 1:2000
@@ -45,14 +45,14 @@ mus <- c(0.1, 0.2, 0.5, 0.8, 1)
 bf01_mus_plot(ns, mus, true_var = 1, prior_var = 1)
 print("Figure 10 done")
 # Figure 11 - Catch-Up-Effect - normal prior vs point prior and BF10 (\sigma_1 < \sqrt{\Bar{y}^2 - \sigma^2})
-point_and_normal_prior(observed_mean = 2, sd_1 = 0.01, file_name = "figures/normal-prior-sd_1<sqrt(y^2-sd^2).pdf") # \sigma = 1 => \sigma_1 = 0.01 < \sqrt{2^2 - 1} = \sqrt{3}
+point_and_normal_prior(observed_mean = 2, sd_1 = 0.01, file_name = "old/thesis/figures/normal-prior-sd_1<sqrt(y^2-sd^2).pdf") # \sigma = 1 => \sigma_1 = 0.01 < \sqrt{2^2 - 1} = \sqrt{3}
 ns <- 1:100
-bf01_mus_plot(ns, mus = c(2), true_var = 1, prior_var = 0.01, file_name = "figures/bf10-sd_1<sqrt(y^2-sd^2).pdf", ylim = c(0, 3))
+bf01_mus_plot(ns, mus = c(2), true_var = 1, prior_var = 0.01, file_name = "old/thesis/figures/bf10-sd_1<sqrt(y^2-sd^2).pdf", ylim = c(0, 3))
 print("Figure 11 done")
 # Figure 12 - Catch-Up-Effect - normal prior vs point prior and BF10 (\sigma_1 > \Bar{y})
-point_and_normal_prior(observed_mean = 0.5, sd_1 = 2, file_name = "figures/normal-prior-sd_1>mean.pdf") # \sigma = 1 => \sigma_1 = 1 > 0.5
+point_and_normal_prior(observed_mean = 0.5, sd_1 = 2, file_name = "old/thesis/figures/normal-prior-sd_1>mean.pdf") # \sigma = 1 => \sigma_1 = 1 > 0.5
 ns <- 1:100
-bf01_mus_plot(ns, mus = c(0.5), true_var = 1, prior_var = 1, file_name = "figures/bf10-sd_1>mean.pdf", ylim = c(0, 3))
+bf01_mus_plot(ns, mus = c(0.5), true_var = 1, prior_var = 1, file_name = "old/thesis/figures/bf10-sd_1>mean.pdf", ylim = c(0, 3))
 print("Figure 12 done")
 # Figure 13 - Catch-Up-Effect - Intersection points for fixed Bayes Factor thresholds BF_crit (for H0) = BF01
 ns <- 1:500
@@ -62,7 +62,7 @@ print("Figure 13 done")
 #########################
 ### Optional Stopping ###
 #########################
-source("scripts/plots/optional-stopping-plot-functions.R")
+source("thesis/plots/optional-stopping-plot-functions.R"); source("old/thesis/optional-stopping-plot-functions.R")
 
 # Figure 14 - Optional Stopping (Tendeiros Setting) - Subplot with 3 plots with P(H_0 | \mu) for different true means with n
 #                                                     and P(H_0 | \mu) with true mean on x-axis (Asymmetrical Case)
@@ -102,7 +102,7 @@ print("Figure 20 done")
 ######################
 # Realistic Setting #
 ######################
-source("scripts/plots/realistic-plot-functions.R")
+source("thesis/plots/realistic-plot-functions.R")
 # Figure 21 - Optional Stopping (Realistic Setting) - Subplot with 3 plots with P(H_0 | \mu) for different true means with n
 #                                                     and P(H_0 | \mu) with true mean on x-axis (Symmetrical Case).
 mus <- c(0.1, 0.5, 0.8)
@@ -113,12 +113,12 @@ print("Figure 21 done")
 realistic_sim_overview_plot()
 print("Figure 22 done")
 
-source("scripts/plots/catch-up-effect-plot-functions.R")
+source("thesis/plots/catch-up-effect-plot-functions.R"); source("old/thesis/normal-prior-plot-functions.R")
 # Figure 23 - Application Example
 ns <- 1:1000
-bf01_mus_plot(ns, mus = c(0.1), true_var = 2^2, prior_var = 3^2, file_name = "figures/bf01-application-h0-max.pdf", ylim = c(0, 30))
-bf01_mus_plot(ns, mus = c(0.1), true_var = 1^2, prior_var = 0.15^2, file_name = "figures/bf01-application-h1-max.pdf", ylim = c(0, 2))
-source("scripts/plots/optional-stopping-plot-functions.R")
+bf01_mus_plot(ns, mus = c(0.1), true_var = 2^2, prior_var = 3^2, file_name = "old/thesis/figures/bf01-application-h0-max.pdf", ylim = c(0, 30))
+bf01_mus_plot(ns, mus = c(0.1), true_var = 1^2, prior_var = 0.15^2, file_name = "old/thesis/figures/bf01-application-h1-max.pdf", ylim = c(0, 2))
+source("thesis/plots/optional-stopping-plot-functions.R"); source("old/thesis/optional-stopping-plot-functions.R")
 h1max <- readRDS("data/application_sim_data_from1_to_Inf")
 sim_histograms(df = h1max, mu = 0.1, xlim_max = 60, ylimh0 = 50, ylimh1 = 5000)
 h0max <- readRDS("data/application_sim_data_from4_to_2590")

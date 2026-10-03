@@ -1,8 +1,8 @@
-setwd("/home/linus/git/hacking-bayes")
+setwd(".")
 # clear workspace
 rm(list = ls())
 # import bf
-source("bayes-factor-functions.R")
+source("old/thesis/bayes-factor-functions.R")
 ns <- 1:150
 fixed_mu <- 0.1
 fixed_sigma <- 1
@@ -12,7 +12,7 @@ y_norm <- seq(-5, 5, 0.01)
 x_norm <- dnorm(y_norm, mean = fixed_mu, sd = 1 / sqrt(10))
 
 # Start the plot with the functions
-pdf("presentation/functions-and-normal-distribution.pdf")
+pdf("old/thesis/figures/presentation/functions-and-normal-distribution.pdf")
 plot(ns, get_y_by_bf(ns, 1, 1 / 3), type = "l", col = "skyblue", lwd = 5,
      main = "Decision Boundaries for Asymmetrical Stopping Rule",
      xlab = "Stop Count", ylab = "Estimated Mean y", xlim = c(-1, 20), ylim = c(-1, 1))
@@ -46,7 +46,7 @@ dev.off()
 
 
 # plot critical values for asymetric simulation
-pdf("presentation/asym-critical-means.pdf")
+pdf("old/thesis/figures/presentation/asym-critical-means.pdf")
 plot(0, 0, xlim = c(-1, 20), ylim = c(-1, 1),
      main = "Decision Boundaries for Asymmetrical Stopping Rule",
      ylab = "Estimated Mean y", xlab = "Stop Count",
@@ -72,7 +72,7 @@ legend("topright", legend = c("Decision for H0", "Normal Distribution around mu 
 dev.off()
 
 # plot critical values for asymetric simulation
-pdf("presentation/asym-critical-means-1.pdf")
+pdf("old/thesis/figures/presentation/asym-critical-means-1.pdf")
 plot(0, 0, xlim = c(-1, 20), ylim = c(-1, 1),
      main = "Decision Boundaries for Asymmetrical Stopping Rule",
      ylab = "Estimated Mean y", xlab = "Stop Count",
@@ -92,7 +92,7 @@ legend("topright", legend = c("Decision for H0"), #, "mu=0.1", "95% Credibility 
 dev.off()
 
 # plot critical values for asymetric simulation
-pdf("presentation/sym-critical-means.pdf")
+pdf("old/thesis/figures/presentation/sym-critical-means.pdf")
 # Find the corresponding y-values where x = 10
 y_f_10 <- get_y_by_bf(10, 1, 1 / 3)
 y_g_10 <- - get_y_by_bf(10, 1, 1 / 3)

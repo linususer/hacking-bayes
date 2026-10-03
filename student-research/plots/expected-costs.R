@@ -5,7 +5,7 @@ setwd(".")
 rm(list = ls())
 gc()
 library(duckdb)
-source("scripts/plots/define_colors.R")
+source("shared/define_colors.R")
 # Initialise params
 big_sim_mus <- seq(0, 1, 0.01)
 r_vals <- c(0.5, 1, 2) / sqrt(2)
@@ -358,7 +358,7 @@ plot_expected_costs_from_summary <- function(summary, scenario_name = "default")
     }
 
     pdf(sprintf(
-        "figures/expected-cost-%s-bf%s-r%.3f.pdf",
+        "student-research/figures/expected-cost-%s-bf%s-r%.3f.pdf",
         scenario_name, bf_crit, r_val
     ), width = 12)
     par(mar = c(5, 6, 7, 5))
@@ -501,7 +501,7 @@ plot_cost_by_bf <- function(
     x_lo <- 0
     x_hi <- 15 # matches xlim below
 
-    pdf(sprintf("figures/cost-by-bf-%s.pdf", scenario_name), width = 12)
+    pdf(sprintf("student-research/figures/cost-by-bf-%s.pdf", scenario_name), width = 12)
     par(mar = c(9, 6, 7, 5)) # increase bottom margin from 5 to 9
     plot(0, 0,
         xlim = range(0, 15), ylim = c(0, y_max * 1.1), type = "n",
@@ -921,7 +921,7 @@ plot_prior_distr_cost <- function(con, bf_crit, r_val, cost_matrix,
 
     # NEW: mode goes into the filename so interval/threshold don't overwrite each other
     pdf(sprintf(
-        "figures/prior-weighted-cost_%s-%s-bf%s-%s.pdf",
+        "student-research/figures/prior-weighted-cost_%s-%s-bf%s-%s.pdf",
         df_type, scenario_name, bf_crit, grid_extent_mode
     ))
     par(mar = c(5, 5, 4, 2))
@@ -987,7 +987,7 @@ bf_crit_cost_matrices <- list(
 con <- dbConnect(duckdb(), db_file)
 for (bfc in c(3)) { # , 6, 10)) {
     cm <- bf_crit_cost_matrices[[as.character(bfc)]]
-    for (dtype in c("opt_stop", "fixed_stop_avg", "same_dist")) {
+    for (dtype in c("opt_stop", "stop_avg", "same_dist")) {
         for (mode in c("interval", "threshold")) { # NEW: both extent modes, every call
             plot_prior_distr_cost(con,
                 bf_crit = bfc, r_val = r_vals[2],
@@ -1234,7 +1234,7 @@ plot_cost_bound <- function(summary) {
 
     # Plot residuals
     pdf(sprintf(
-        "figures/prior-weighted-cost_%s-%s-bf%s.pdf",
+        "student-research/figures/prior-weighted-cost_%s-%s-bf%s.pdf",
         df_type, bound, bf_crit
     ))
     par(mar = c(5, 5, 4, 2))
@@ -1273,27 +1273,6 @@ plot_cost_bound <- function(summary) {
     dev.off()
 }
 
-
-plot_overview_per_bf_crit <- function(summary) {
-    # Extract relevant information
-    # bins = bins,
-    # h0_point_cost = h0_point_cost,
-    # h1_total_cost = h1_total_cost,
-    # expected_cost = expected_cost,
-    # interval_mass = captured_mass,
-    # residual_mass = residual_mass
-    # Somehow I have to include the summaries for the different kinds of dfs
-    h1_lower_cost <- summary_lower$h1_total_cost
-    h1_upper_cost <- summary_upper$h1_total_cost
-    h0_lower_cost <- summary_lower$h0_point_cost
-    h0_upper_cost <- summary_upper$h0_point_cost
-    # Build plot
-    pdf(file = sprintf(
-        "figures/summary-expected-cost_bf%s.pdf", bf_crit
-    ))
-    dev.off()
-}
-
 con <- dbConnect(duckdb(), db_file)
 con_large <- dbConnect(duckdb(), db_large_effects_file)
 
@@ -1325,7 +1304,7 @@ for (bfc in c(3, 6, 10)) {
   df_bf <- do.call(rbind, per_bf_summaries[[bf_key]])
   write.table(
     df_bf,
-    sprintf("summaries/expected_costs_bf-%s.txt", bfc),
+    sprintf("student-research/summaries/expected_costs_bf-%s.txt", bfc),
     sep = "\t", row.names = FALSE, col.names = TRUE
   )
 }
@@ -1333,7 +1312,7 @@ for (bfc in c(3, 6, 10)) {
 df_all <- do.call(rbind, all_summaries)
 write.table(
   df_all,
-  "summaries/expected_costs_all.txt",
+  "student-research/summaries/expected_costs_all.txt",
   sep = "\t", row.names = FALSE, col.names = TRUE
 )
 dbDisconnect(con)
@@ -1344,14 +1323,14 @@ for (bfc in c(3, 6, 10)) {
     cm <- bf_crit_cost_matrices[[as.character(bfc)]]
     #for (dtype in c("opt_stop", "stop_avg", "same_dist")) {
         #for (bound in c("upper", "lower")) {
-            summary_title <- sprintf("summaries/expected_costs_bf-%s.txt", bfc)
+            summary_title <- sprintf("student-research/summaries/expected_costs_bf-%s.txt", bfc)
             summary <- read.table(summary_title)
         #}
     #}
 }
 
 summary_all <- read.table(
-  "summaries/expected_costs_all.txt",
+  "student-research/summaries/expected_costs_all.txt",
   header = TRUE, sep = "\t",
   stringsAsFactors = FALSE, quote = "\""
 )
@@ -1359,7 +1338,7 @@ summary_all <- read.table(
 ## overview plot for everything
 
 plot_overview_expected_costs <- function(summary,
-                                          file = "summaries/expected_costs_overview.pdf") {
+                                          file = "student-research/summaries/expected_costs_overview.pdf") {
 
   if (!is.data.frame(summary)) {
     if (is.list(summary) && !is.null(summary$bf_crit)) {

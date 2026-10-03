@@ -1,5 +1,5 @@
 # Set working directory
-setwd("/home/linus/git/hacking-bayes")
+setwd(".")
 
 # Clear workspace
 rm(list = ls())
@@ -7,7 +7,7 @@ gc()
 library(duckdb)
 library(foreach)
 library(doParallel)
-source("scripts/plots/define_colors.R")
+source("shared/define_colors.R")
 
 # Register parallel backend
 registerDoParallel(cores = detectCores())
@@ -27,7 +27,7 @@ db_file <- "data/hacking-bayes.duckdb"
 # x-axis: BF_crit, y-axis: P(H0), color: r
 plotProbWithBFCrit <- function(mu) {
     con <- dbConnect(duckdb(), db_file, read_only = TRUE)
-    # pdf(paste("figures/realistic-sym-decision-prob-mu-", mu, ".pdf", sep = ""))
+    # pdf(paste("thesis/figures/realistic-sym-decision-prob-mu-", mu, ".pdf", sep = ""))
     plot(0, 0,
         xlim = c(0, 10), ylim = c(0, 1), type = "n",
         main = bquote(mu == .(mu)),
@@ -75,7 +75,7 @@ plotProbWithBFCritBounds <- function(mu) {
     con <- dbConnect(duckdb(), db_file, read_only = TRUE)
     # Plot the decision probability for H0 given mu
     # x-axis: mu, y-axis: BF_crit
-     pdf(paste("figures/realistic-sym-decision-prob-mu-", mu, "-bf-crits.pdf", sep = ""))
+     pdf(paste("thesis/figures/realistic-sym-decision-prob-mu-", mu, "-bf-crits.pdf", sep = ""))
     r2_prob <- sapply(BF_crits, function(bf_crit) {
         as.numeric(dbGetQuery(con, "SELECT COUNT(*) FROM cauchy_sym
                                 WHERE ABS((1 / SQRT(2)) - r) < 1e-6
@@ -98,7 +98,7 @@ plotProbWithBFCritBounds <- function(mu) {
     dbDisconnect(con)
 }
 # for each mu in big_sim_mus, plot the decision probability for H0 parrallel
-pdf("figures/realistic-sym-decision-prob-by-bf_crit.pdf")
+pdf("thesis/figures/realistic-sym-decision-prob-by-bf_crit.pdf")
 par(mfrow = c(2, 2))
 sapply(big_sim_mus, function(mu) {
     plotProbWithBFCrit(mu)
@@ -109,7 +109,7 @@ legend("topright",
 )
 dev.off()
 
-pdf("figures/realistic-sym-decision-prob-by-bf_crit-with-boundaries.pdf")
+pdf("thesis/figures/realistic-sym-decision-prob-by-bf_crit-with-boundaries.pdf")
 par(mfrow = c(2, 2))
 sapply(big_sim_mus, function(mu) {
     plotProbWithBFCritBounds(mu)
@@ -121,7 +121,7 @@ bf_crit <- c(3, 6, 10)
 con <- dbConnect(duckdb(), db_file, read_only = TRUE)
 
 # Plot the decision probability for H0 given mu
-pdf(paste("figures/realistic-sym-decision-prob-bf-crits.pdf", sep = ""))
+pdf(paste("thesis/figures/realistic-sym-decision-prob-bf-crits.pdf", sep = ""))
 plot(0, 0,
     xlim = c(0, 1), ylim = c(0, 1), type = "n",
     main = "Decision probability for symmetrical rule in realistic setting",

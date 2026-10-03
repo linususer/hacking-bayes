@@ -5,7 +5,7 @@ setwd(".")
 rm(list = ls())
 gc()
 library(duckdb)
-source("scripts/plots/define_colors.R")
+source("shared/define_colors.R")
 # Initialise params
 big_sim_mus <- seq(0, 1, 0.01)
 r_vals <- c(0.5, 1, 2) / sqrt(2)
@@ -237,7 +237,7 @@ realistic_sim_fixed_size_plot <- function(fixed_opt_avg_data, fixed_weighted_sum
   # increase the size, including font size
   con <- dbConnect(duckdb(), db_file)
   for (mu in c(0.5)) { # c(0.01,0.02,0.06,0.05, 0.1,0.2,0.5)
-    pdf(paste("figures/report/fixed-decision-STOP_AVG.pdf", sep = ""))
+    pdf(paste("lab-project/figures/report/fixed-decision-STOP_AVG.pdf", sep = ""))
     par(mfrow = c(1, 1), mar = c(5, 5, 5, 5))
     plot(0, 0,
       xlim = c(0, 100), ylim = c(0, 1), type = "n",
@@ -344,7 +344,7 @@ realistic_sim_fixed_size_plot(fixed_opt_avg_data, fixed_weighted_sum_data, fixed
 realistic_sim_fixed_max <- function(bf_crit, r) {
   con <- dbConnect(duckdb(), db_file)
   # Decision probability for H0 given mu
-  # pdf(paste("figures/realistic-sim-fixed-max-bf3.pdf", sep = ""))
+  # pdf(paste("lab-project/figures/realistic-sim-fixed-max-bf3.pdf", sep = ""))
   plot(0, 0,
     xlim = c(0, 1), ylim = c(0, 1), type = "n",
     main = bquote("Decision probability for 'H0'"),
@@ -411,7 +411,7 @@ realistic_sim_combined_plot <- function(bf_crit, r_val, db_file = "data/hacking-
 
   # Plot
   par(mfrow = c(1, 1), mar = c(1, 1, 1, 1))
-  pdf(paste("figures/report/realistic-fixed-sim-overview-for-bfcrit-", bf_crit, "-r-", round(r_val, 3), ".pdf", sep = ""))
+  pdf(paste("lab-project/figures/report/realistic-fixed-sim-overview-for-bfcrit-", bf_crit, "-r-", round(r_val, 3), ".pdf", sep = ""))
   par(mar = c(5, 6, 5, 5))
   # r_val text
   if (r_val == r_vals[1]) {
@@ -495,7 +495,7 @@ realistic_sim_combined_plot(10, r_vals[2])
 # # plot for all rs and for all BF_crits
 # plot_stop_count_to_effect_size_bf <- function(bf_crits, r_val, db_file = "data/hacking-bayes.duckdb") {
 #   con <- dbConnect(duckdb(), db_file)
-#   pdf(paste("figures/stop-count-to-effect-size-r-", round(r_val, 3), ".pdf", sep = ""), width = 12, height = 8)
+#   pdf(paste("lab-project/figures/stop-count-to-effect-size-r-", round(r_val, 3), ".pdf", sep = ""), width = 12, height = 8)
 #   plot(0, 0,
 #     xlim = c(0, 1), ylim = c(0, 400), type = "n",
 #     main = bquote("Stop Count to Effect Size for " * r * " = " * .(r_val)),
@@ -519,7 +519,7 @@ realistic_sim_combined_plot(10, r_vals[2])
 # plot for all rs
 # plot_stop_count_to_effect_size_r <- function(bf_crit, r_vals, db_file = "data/hacking-bayes.duckdb") {
 #   con <- dbConnect(duckdb(), db_file)
-#   pdf(paste("figures/stop-count-to-effect-size-bf-", bf_crit, ".pdf", sep = ""), width = 12, height = 8)
+#   pdf(paste("lab-project/figures/stop-count-to-effect-size-bf-", bf_crit, ".pdf", sep = ""), width = 12, height = 8)
 #   plot(0, 0,
 #     xlim = c(0, 1), ylim = c(0, 50), type = "n",
 #     main = bquote("Stop Count to Effect Size for " * BF[crit] * " = " * .(bf_crit)),
@@ -546,7 +546,7 @@ realistic_sim_combined_plot(10, r_vals[2])
 # plot difference between optional stopping and fixed size for the same mu
 # plot_fixed_vs_optional_stopping <- function(bf_crit, r_val, db_file = "data/hacking-bayes.duckdb") {
 #   con <- dbConnect(duckdb(), db_file)
-#   pdf(paste("figures/fixed-vs-optional-stopping-bf-", bf_crit, "-r-", round(r_val, 3), ".pdf", sep = ""), width = 12, height = 8)
+#   pdf(paste("lab-project/figures/fixed-vs-optional-stopping-bf-", bf_crit, "-r-", round(r_val, 3), ".pdf", sep = ""), width = 12, height = 8)
 #   plot(0, 0,
 #     xlim = c(0, 1), ylim = c(0, 1), type = "n",
 #     main = bquote("Fixed Size vs Optional Stopping for " * BF[crit] * " = " * .(bf_crit) * ", r = " * .(r_val)),
@@ -580,7 +580,7 @@ plot_decision_sim_fixed_size <- function(bf_crit, r_val) {
   con <- dbConnect(duckdb(), db_file)
   fixed_max_d0 <- get_fixed_max(con, bf_crit, r_val, decision = 0)
   for (decision in 0:2) {
-    pdf_filename <- sprintf("figures/report/realistic-sim-fixed-size-all-decisions-bf-crit-%s-r-%.3f-%s-wo-legend.pdf", bf_crit, r_val, decision)
+    pdf_filename <- sprintf("lab-project/figures/report/realistic-sim-fixed-size-all-decisions-bf-crit-%s-r-%.3f-%s-wo-legend.pdf", bf_crit, r_val, decision)
     pdf(pdf_filename)
 
     decision_text <- switch(as.character(decision),
@@ -628,7 +628,7 @@ BF_crits <- c(10)
 # Plot decision probability for 'H0' on y axis and sample size on the x axis
 realistic_sim_fixed_size_hill <- function(fixed_opt_avg_data) {
   con <- dbConnect(duckdb(), db_file)
-  pdf("figures/report/fixed-decision-prob-delta-compare.pdf", width = 18, height = 6)
+  pdf("lab-project/figures/report/fixed-decision-prob-delta-compare.pdf", width = 18, height = 6)
 
   par(mfrow = c(1, 3), mar = c(5, 5, 5, 5))
   mu_vals <- c(0.01, 0.02, 0.06)
@@ -755,7 +755,7 @@ plot_prior_distr <- function(con, bf_crit, r_val, df_type = "opt_stop") {
   print(data.frame(delta = deltas_plot, prob = probs_plot))
 
   # 5. Plotting
-  pdf(paste0("figures/prior-distribution_", df_type, ".pdf"))
+  pdf(paste0("lab-project/figures/prior-distribution_", df_type, ".pdf"))
 
   # Set margins to ensure labels aren't cut off
   par(mar = c(5, 5, 4, 2))

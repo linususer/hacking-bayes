@@ -4,7 +4,7 @@ setwd(".")
 rm(list = ls())
 gc()
 library(duckdb)
-source("scripts/plots/define_colors.R")
+source("shared/define_colors.R")
 # Initialise params
 big_sim_mus <- seq(0, 1, 0.01)
 r_vals <- c(0.5, 1, 2) / sqrt(2)
@@ -26,9 +26,9 @@ cauchy_plot <- function() {
   # get mus
   mus <- unlist(dbGetQuery(con, "SELECT DISTINCT mu FROM cauchy_prior"))
   # average BF over repetitions
-  results_df <- dbGetQuery(con, "SELECT mu,n,AVG(bf) FROM cauchy_prior GROUP BY n, mu ORDER BY mu, n")
+  results_df <- dbGetQuery(con, "SELECT mu, n, AVG(bf) AS bf FROM cauchy_prior GROUP BY n, mu ORDER BY mu, n")
   dbDisconnect(con)
-  pdf("figures/cauchy-prior-simulation.pdf")
+  pdf("thesis/figures/cauchy-prior-simulation.pdf")
   plot(0, 0,
     type = "n", xlab = "n", ylab = bquote(BF[01]),
     xlim = c(1, 100), log = "y", ylim = c(1 / 10, 5),
@@ -52,7 +52,7 @@ cauchy_plot <- function() {
 
 realistic_sim_overview_plot <- function() {
   con <- dbConnect(duckdb(), db_file)
-  pdf(paste("figures/realistic-sym-decision-prob", ".pdf", sep = ""), width = 12, height = 8)
+  pdf(paste("thesis/figures/realistic-sym-decision-prob", ".pdf", sep = ""), width = 12, height = 8)
   par(mfrow = c(2, 3), mar = c(5, 5, 5, 5))
   # Add one space
   plot.new()
@@ -237,7 +237,7 @@ realistic_sim_histograms <- function(bf_crit, mus, r_val) {
                     AND decision = 2",
       list(r_val, bf_crit, mu)
     )
-    pdf(paste("figures/realistic-sim-bf-crit-", bf_crit, "-r-", r_text, "-mu-", mu, ".pdf", sep = ""))
+    pdf(paste("thesis/figures/realistic-sim-bf-crit-", bf_crit, "-r-", r_text, "-mu-", mu, ".pdf", sep = ""))
     par(mfrow = c(2, 1))
     par(mar = c(0, 5, 3, 3))
     # print(h0_data %>% select(Stop_Count) %>% pull())
@@ -272,7 +272,7 @@ realistic_sim_decision_prob_curve <- function(bf_crit, r_val) {
 
   pdf(
     paste0(
-      "figures/realistic-sim-decision-prob-bf-crit2-",
+      "thesis/figures/realistic-sim-decision-prob-bf-crit2-",
       bf_crit, "-r-", r_text, ".pdf"
     ),
     width = 14, height = 8

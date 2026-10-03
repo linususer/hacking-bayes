@@ -1,4 +1,4 @@
-setwd("/home/linus/git/hacking-bayes")
+setwd(".")
 # clear workspace
 rm(list = ls())
 # Load required libraries

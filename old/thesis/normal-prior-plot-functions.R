@@ -1,39 +1,12 @@
-setwd("/home/linus/git/hacking-bayes")
+setwd(".")
 # clear workspace
 rm(list = ls())
-source("scripts/plots/define_colors.R")
-freq_optional_stopping <- function() {
-    # set.seed(400)
-    # draw data from normal distribution and perform two-sided t-test
-    # until p-value is below 0.05 and plot p-values
-    # there is no effect, but the p-value becomes significant
-    data <- rnorm(2, mean = 0, sd = 1)
-    p_val <- c()
-    count <- 2
-    while (count <= 2000) {
-        data <- c(data, rnorm(1, mean = 0, sd = 1))
-        p_val <- c(p_val, t.test(data)$p.value)
-        # print(length(data))
-        count <- count + 1
-    }
-    # plot p-values
-    pdf("figures/frequentistic-optional-stopping.pdf")
-    plot(p_val,
-        type = "l", col = "black", lwd = 4, xlab = "Sample Size", ylab = "p-value",
-        main = "Standard Frequentist t-test", xlim = c(0,2000), ylim = c(0, 1),
-        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
-    )
-    # points(length(p_val), t.test(data)$p.value, col = "black", pch = 4, cex = 2, lwd = 4)
-    # add significance threshold with text
-    text(1170, 0.075, "Significance threshold p = 0.05", pos = 4, col = "black")
-    abline(h = 0.05, col = "black", lty = 2, lwd = 4)
-    dev.off()
-}
+source("shared/define_colors.R")
 
 bayes_optional_stopping <- function() {
     # draw data from normal distribution and perform bayesian t-test
     # until the Bayes factor is higher than 3 or lower than 1/3 and plot Bayes factors
-    source("bayes-factor-functions.R")
+    source("old/thesis/bayes-factor-functions.R")
     bf_crit1 <- 1 / 3
     bf_crit2 <- 3
     data <- rnorm(1, mean = 0, sd = 1)
@@ -47,7 +20,7 @@ bayes_optional_stopping <- function() {
         count <- count + 1
     }
     # plot Bayes factors
-    pdf("figures/bayesian-optional-stopping.pdf")
+    pdf("old/thesis/figures/bayesian-optional-stopping.pdf")
     plot(bf_list,
         type = "l", col = "#000",
         main = "Bayesian t-test",
@@ -63,7 +36,7 @@ bayes_optional_stopping <- function() {
     dev.off()
 }
 
-point_and_normal_prior <- function(true_mean = 0, observed_mean = NULL, sd_1 = 1, file_name = "figures/point-prior-and-normal-prior.pdf") {
+point_and_normal_prior <- function(true_mean = 0, observed_mean = NULL, sd_1 = 1, file_name = "old/thesis/figures/point-prior-and-normal-prior.pdf") {
     # plot point prior and normal prior
     pdf(file_name)
     plot(0, 0,
@@ -94,8 +67,8 @@ point_and_normal_prior <- function(true_mean = 0, observed_mean = NULL, sd_1 = 1
 }
 
 
-bf01_mus_plot <- function(ns, mus, true_var, prior_var, logscale = FALSE, file_name = "figures/bf01-compare-mus.pdf", ylim = c(0, 10)) {
-    source("bayes-factor-functions.R")
+bf01_mus_plot <- function(ns, mus, true_var, prior_var, logscale = FALSE, file_name = "old/thesis/figures/bf01-compare-mus.pdf", ylim = c(0, 10)) {
+    source("old/thesis/bayes-factor-functions.R")
     pdf(file_name)
     str01 <- "01"
     if (logscale) {
@@ -130,35 +103,9 @@ bf01_mus_plot <- function(ns, mus, true_var, prior_var, logscale = FALSE, file_n
     dev.off()
 }
 
-point_and_cauchy_prior <- function() {
-    library("BayesFactor")
-    # plot point prior and cauchy prior
-    pdf("figures/point-prior-and-cauchy-prior.pdf", width = 8, height = 4)
-    # double the font size
-    plot(0, 0,
-        xlim = c(-3, 3), ylim = c(0, 0.5), type = "n",
-        # main = "Point Prior vs Cauchy Prior",
-        ylab = "", xlab = bquote("Effect Size " * delta),
-        cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.5
-    )
-
-    # Plot the Cauchy prior density
-    x_vals <- seq(-5, 5, 0.01)
-    lines(x_vals, dcauchy(seq(-5, 5, 0.01), 0, 1 / sqrt(2)), col = "#59B3E6", lwd = 4)
-    points(0, 0.5, col = "#CD1076", pch = 19, cex = 2)
-    lines(c(0, 0), y = c(0, 0.5), col = "#CD1076", lwd = 4)
-    cauchy_at_0 <- dcauchy(0, 0, 1 / sqrt(2))
-    # points(0, cauchy_at_0, col = "black", pch = 4, cex = 2) #
-    arrows(x0 = 0, x1 = 1 / sqrt(2), y0 = dcauchy(1 / sqrt(2)), y1 = dcauchy(1 / sqrt(2)), length = 0.15, lwd = 4)
-    text(x = 1 / (2 * sqrt(2)) - 0.05, y = dcauchy(1 / sqrt(2)) + 0.03, label = "r")
-    legend("topleft", legend = c(bquote(H[0]:delta == 0), bquote(H[1]:delta %~% Cauchy(r))), fill = c("#CD1076", "#59B3E6"))
-    text(x = 2.5, y = 0.45, labels = bquote(BF["01"] == frac(p(data * " | " * H[0]), p(data * " | " * H[1]))))
-    dev.off()
-}
-
 bf01_var_plot <- function(ns, mu, vars, prior_var) {
-    source("bayes-factor-functions.R")
-    pdf("figures/bf01-compare-vars.pdf")
+    source("old/thesis/bayes-factor-functions.R")
+    pdf("old/thesis/figures/bf01-compare-vars.pdf")
     str01 <- "01"
     plot(ns, bf01(bf10_general(ns, mu, vars[1], prior_var)),
         type = "n", xlab = "n",
@@ -184,8 +131,8 @@ bf01_var_plot <- function(ns, mu, vars, prior_var) {
 
 
 bf01_prior_var_plot <- function(ns, mu, true_var, prior_vars) {
-    source("bayes-factor-functions.R")
-    pdf("figures/bf01-compare-prior-vars.pdf")
+    source("old/thesis/bayes-factor-functions.R")
+    pdf("old/thesis/figures/bf01-compare-prior-vars.pdf")
     str01 <- "01"
     plot(ns, bf01(bf10_general(ns, mu, true_var, prior_vars[1])),
         type = "n", xlab = "n",
@@ -214,8 +161,8 @@ bf01_intersection_points_bf_crit <- function(
     ns,
     mu = 0.1, true_var = 1,
     prior_var = 1, bf_crits = 3) {
-    source("bayes-factor-functions.R")
-    pdf("figures/bf01-intersection-points-bf-crit.pdf")
+    source("old/thesis/bayes-factor-functions.R")
+    pdf("old/thesis/figures/bf01-intersection-points-bf-crit.pdf")
     str01 <- "01"
     plot(ns, bf01(bf10_general(ns, mu, true_var, prior_var)),
         type = "n", xlab = "n",
@@ -253,8 +200,8 @@ bf01_intersection_points_bf_crit <- function(
 
 ## plot intersection points for different mus
 bf01_intersection_points_mu <- function(ns, mus, true_var = 1, prior_var = 1, bf_crit = 3) {
-    source("bayes-factor-functions.R")
-    pdf("figures/bf01-intersection-points-mus.pdf")
+    source("old/thesis/bayes-factor-functions.R")
+    pdf("old/thesis/figures/bf01-intersection-points-mus.pdf")
     str01 <- "01"
     plot(ns, bf01(bf10_general(ns, mus[1], true_var, prior_var)),
         type = "n", xlab = "n",

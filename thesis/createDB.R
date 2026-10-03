@@ -1,6 +1,6 @@
 # clear workspace
 rm(list = ls())
-setwd("/home/linus/git/hacking-bayes")
+setwd(".")
 # load libraries
 library("duckdb")
 

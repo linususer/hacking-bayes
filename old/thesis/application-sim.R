@@ -8,7 +8,7 @@ rm(list = ls())
 library("data.table")
 library("duckdb")
 # Import Bayes Factor functions
-source("bayes-factor-functions.R")
+source("old/thesis/bayes-factor-functions.R")
 
 #' @description Calculate an applicable example of misspecified params 
 #' with Bayesian Optional Stopping drawn from a normal distribution.

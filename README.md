@@ -4,80 +4,81 @@ Here are simulation data and plot functions to compare Optional Stopping and fix
 
 # Directory and DuckDB structure:
 
-`T` denotes files that are exclusive to the Bachelor thesis, `P` denotes files that are exclusively done for a research project. `P` builds up on results of `T`, therefore these are bundled in this directory together. 
+The repository bundles three projects that build on each other. Every script is run from the repository root (paths such as `data/` and `shared/` are relative to it).
+
+- **Thesis** – Bayesian Optional Stopping with the Bayesian t-test (`BayesFactor`).
+- **Lab project** – fixed sample size designs compared with Optional Stopping, builds on the thesis data.
+- **Student research** – e-values, expected costs and large effect sizes, builds on thesis and lab project data.
 
 ```
 hacking-bayes
-.
-├── figures
-└── scripts
-    ├── calculations
-        ├── applications-sim.R [T]
-            -> generates application examples
-        ├── cauchy-function-sim.R [T]
-            -> generates random walks for cauchy prior
-        ├── realisic-fix-sim.R [P] 
-            -> generates the main Bayesian t-test data for fixed sample size tests
-        ├── realistic-opt-sim-par.R [T]
-            -> generates the main Bayesian t-test data for optional stopping tests
-        ├── rouder-simulation.R [T]
-            -> generates the main idealised setting data for optional stopping tests
-        ├── sanborn_prob_replication.R [P]
-            -> generates replication of Sanborn et al. (2014)
-        └── sanborn_replication.R [P]
-            -> generates replication of Sanborn et al. (2014)
-    └── plots
-        ├── binom-example.R [T]
-            -> sanborn example plot for binomial distribution
-        ├── catch-up-effect-plot-functions.R [T]
-            -> Catch Up Effect plots
-        ├── cauchy-plots.R [T]
-            -> Plots for Cauchy prior related stuff
-        ├── define_colors.R [T,P]
-            -> Color definitions
-        ├── fixed-plots.R [P]
-            -> fixed simulation results visualised in comparison to Optional Stopping results
-        ├── optional-stopping-plot-functions.R [T]
-            -> different optional stopping visualisation functions
-        ├── plot-all-figures.R [T]
-            -> DEPRECATED
-        ├── presentation.R [T]
-            -> some visualisations for a presentation
-        ├── random_walk_priors.R
-            -> Visualisation for random walk and point priors
-        ├── realistic-plot-functions.R [T]
-            -> visualisations for Optional Stopping used in a poster at TEAP 2025 (see https://osf.io/yx8ng/files/f9bm3)
-        ├── sanborn-replication-plots.R [P]
-            -> replication plots for Sanborn et al. (2014)
-        └── steele_replication.py [P]
-            -> Visualisation tree for the specific coinflip example for Steele (2013)
+├── data/                                  (not tracked, see below)
+├── shared/
+│   └── define_colors.R                    -> color definitions (Okabe & Ito)
+├── thesis/
+│   ├── createDB.R                         -> migration of early simulation files into DuckDB
+│   ├── calculations/
+│   │   ├── cauchy-function-sim.R          -> random walks for the Cauchy prior
+│   │   └── realistic-opt-sim-par.R        -> main Bayesian t-test data for Optional Stopping
+│   ├── plots/
+│   │   ├── binom-example.R                -> Sanborn example plot for the binomial distribution
+│   │   ├── catch-up-effect-plot-functions.R -> Catch Up Effect plots
+│   │   ├── cauchy-plots.R                 -> plots related to the Cauchy prior
+│   │   ├── optional-stopping-plot-functions.R -> histograms and decision probabilities for `bf_decision_threshold`
+│   │   └── realistic-plot-functions.R     -> Optional Stopping plots, poster at TeaP 2025 (see https://osf.io/yx8ng/files/f9bm3)
+│   └── figures/
+├── lab-project/
+│   ├── calculations/
+│   │   └── realistic-fix-sim-par.R        -> main Bayesian t-test data for fixed sample size tests
+│   ├── plots/
+│   │   ├── fixed-plots.R                  -> fixed sample size results compared with Optional Stopping
+│   │   ├── random_walk_priors.R           -> random walk and point prior visualisations
+│   │   └── steele_replication.py          -> decision tree for the coin flip example of Steele (2013)
+│   └── figures/                           (report/ holds the figures used in the report)
+├── student-research/
+│   ├── calculations/
+│   │   └── extension_sim.R                -> fixed N and Optional Stopping for large effect sizes
+│   ├── plots/
+│   │   └── expected-costs.R               -> expected costs of fixed N vs. Optional Stopping
+│   ├── e-values.R                         -> e-value simulations (safestats) and their plots
+│   ├── figures/
+│   └── summaries/
+└── old/                                   -> results that are no longer needed
+    ├── thesis/                            -> everything depending on the normal / point prior Bayes factor
+    │                                         (bayes-factor-functions.R) and its figures
+    └── lab-project/                       -> replication of Sanborn et al. (2014)
 ```
 
 The simulation data of the main results of the simulations is provided under <https://linus-szillat.de/ressources/hacking-bayes.duckdb>.
 
-The database is structured in these tables:
+The database is structured in these tables (`T` thesis, `P` lab project, `S` student research, `old` no longer used):
 
 ```
-├── application_example [T]
-├── bf_decision_threshold [T]
+data/hacking-bayes.duckdb
+├── application_example [old]           (created by old/thesis/application-sim.R)
+├── bf_decision_threshold [T]             (created by old/thesis/rouder-simulation.R)
 ├── cauchy_prior [T]
-├── cauchy_sym [T]
-├── cauchy_sym_fixed_size [P]
+├── cauchy_sym [T]                         (also used by P and S)
+├── cauchy_sym_fixed_size [P]              (also used by S)
 ├── cauchy_sym_fixed_size_bf_crit [P]
 ├── cauchy_sym_fixed_size_r [P]
 ├── cauchy_sym_fixed_size_extra [P]
-├── sanborn_probs_replication [P]
-└── sanborn_replication [P]
+├── sanborn_probs_replication [old]
+└── sanborn_replication [old]
+
+data/large_effects.duckdb [S]
+├── fixed_size_large_effect
+└── optional_stopping_large_effect
+
+data/e-values-simulation.RData [S]
 ```
-
-
-
 
 # Main dependencies
 
 `duckdb`
 `data.table`
 `BayesFactor`
+`safestats` (student research)
 
 For plotly visualisations Python and pip dependencies might be required.
 
