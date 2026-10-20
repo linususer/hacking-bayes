@@ -4,9 +4,16 @@ Here are simulation data and plot functions to compare Optional Stopping and fix
 
 # Directory and DuckDB structure:
 
-Every plot script follows the same pattern: a `*_summary()` function queries the data and writes a
-tab-separated summary to `<project>/summaries/`, and a `plot_*_summary()` function draws the figure into
-`<project>/figures/` from that summary (or from the summary file).
+Every analysis that uses the simulation data is split into two stages:
+
+- `<project>/summarise/<topic>.R` queries `data/*.duckdb` with `*_summary()` functions and writes
+  tab-separated summaries to `<project>/summaries/`.
+- `<project>/plots/<topic>.R` draws the figures into `<project>/figures/` with `plot_*_summary()`
+  functions and only reads `<project>/summaries/`, so all figures can be rebuilt without the database.
+
+`Rscript run-all.R` rebuilds all figures from the committed summaries; `Rscript run-all.R summarise`
+rebuilds the summaries from the database first. The simulations in `<project>/calculations/` are never
+run by it.
 
 The repository bundles three projects that build on each other. Every script is run from the repository root (paths such as `data/` and `shared/` are relative to it).
 
@@ -16,43 +23,47 @@ The repository bundles three projects that build on each other. Every script is 
 
 ```
 hacking-bayes
+├── run-all.R                              -> rebuilds all figures (and with `summarise` all summaries)
 ├── data/                                  (not tracked, see below)
 ├── shared/
 │   ├── define_colors.R                    -> color definitions (Okabe & Ito)
-│   └── queries.R                          -> DuckDB queries shared by lab project and student research
+│   ├── queries.R                          -> DuckDB queries shared by lab project and student research
+│   └── summary-io.R                       -> write_summary() / read_summary()
 ├── thesis/
 │   ├── createDB.R                         -> migration of early simulation files into DuckDB
 │   ├── calculations/
 │   │   ├── cauchy-function-sim.R          -> random walks for the Cauchy prior
 │   │   └── realistic-opt-sim-par.R        -> main Bayesian t-test data for Optional Stopping
-│   ├── plots/
+│   ├── summarise/ and plots/
+│   │   ├── realistic-sim.R                -> Optional Stopping with the Cauchy prior, poster at TeaP 2025 (see https://osf.io/yx8ng/files/f9bm3)
+│   │   ├── decision-prob-bf-crit.R        -> decision probability for H0 by BF_crit and r
+│   │   └── optional-stopping.R            -> histograms and decision probabilities for `bf_decision_threshold`
+│   ├── plots/ (no database needed)
 │   │   ├── binom-example.R                -> Sanborn example plot for the binomial distribution
-│   │   ├── catch-up-effect-plot-functions.R -> Catch Up Effect plots
-│   │   ├── cauchy-plots.R                 -> plots related to the Cauchy prior
-│   │   ├── optional-stopping-plot-functions.R -> histograms and decision probabilities for `bf_decision_threshold`
-│   │   └── realistic-plot-functions.R     -> Optional Stopping plots, poster at TeaP 2025 (see https://osf.io/yx8ng/files/f9bm3)
-│   ├── figures/
-│   └── summaries/
+│   │   └── catch-up-effect-plot-functions.R -> Catch Up Effect plots
+│   ├── summaries/
+│   └── figures/
 ├── lab-project/
 │   ├── calculations/
 │   │   └── realistic-fix-sim-par.R        -> main Bayesian t-test data for fixed sample size tests
-│   ├── plots/
-│   │   ├── fixed-plots.R                  -> fixed sample size results compared with Optional Stopping
+│   ├── summarise/ and plots/
+│   │   └── fixed-size.R                   -> fixed sample size results compared with Optional Stopping
+│   ├── plots/ (no database needed)
 │   │   ├── random_walk_priors.R           -> random walk and point prior visualisations
 │   │   └── steele_replication.py          -> decision tree for the coin flip example of Steele (2013)
-│   ├── figures/                           (report/ holds the figures used in the report)
-│   └── summaries/
+│   ├── summaries/
+│   └── figures/                           (report/ holds the figures used in the report)
 ├── student-research/
+│   ├── expected-costs-settings.R          -> cost matrices used by both stages of the expected costs
 │   ├── calculations/
 │   │   ├── e-values-simulation.R          -> e-value simulations (safestats), writes the summaries
 │   │   └── extension_sim.R                -> fixed N and Optional Stopping for large effect sizes
+│   ├── summarise/ and plots/
+│   │   └── expected-costs.R               -> expected costs of fixed N vs. Optional Stopping
 │   ├── plots/
-│   │   ├── e-values-plots.R               -> e-value plots, made from the summaries only
-│   │   ├── expected-costs.R               -> expected costs of fixed N vs. Optional Stopping (run script)
-│   │   ├── expected-costs-summaries.R     -> cost summary functions
-│   │   └── expected-costs-plots.R         -> cost plot functions
-│   ├── figures/
-│   └── summaries/
+│   │   └── e-values.R                     -> e-value plots from the simulation summaries
+│   ├── summaries/
+│   └── figures/
 └── old/                                   -> results that are no longer needed
     ├── thesis/                            -> everything depending on the normal / point prior Bayes factor
     │                                         (bayes-factor-functions.R) and its figures

@@ -1,5 +1,5 @@
 # Simulations for the e-value study. Writes the summaries to student-research/summaries/;
-# the plots are made from them by student-research/plots/e-values-plots.R.
+# the plots are made from them by student-research/plots/e-values.R.
 
 # Set working directory
 setwd(".")

@@ -1,7 +1,7 @@
 setwd(".")
 # clear workspace
 rm(list = ls())
-source("thesis/plots/optional-stopping-plot-functions.R") # loads sym / asym data
+source("thesis/summarise/optional-stopping.R") # loads sym / asym data
 source("old/thesis/bayes-factor-functions.R")
 
 ################

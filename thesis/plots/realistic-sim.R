@@ -1,55 +1,21 @@
+# Plots for the realistic (Cauchy prior) optional stopping simulation of the thesis.
+# Only reads thesis/summaries/ (written by thesis/summarise/realistic-sim.R).
 # Set working directory
 setwd(".")
 
+# Clear workspace
 rm(list = ls())
 gc()
-library(duckdb)
 source("shared/define_colors.R")
+source("shared/summary-io.R")
 # Initialise params
-big_sim_mus <- seq(0, 1, 0.01)
 r_vals <- c(0.5, 1, 2) / sqrt(2)
 BF_crits <- c(3, 6, 10)
-repetitions <- 20000
-
-db_file <- "data/hacking-bayes.duckdb"
-table_name_opt_stop <- "realistic_sym_simulation"
-table_name_cauchy_fun <- "cauchy_prior"
-
-
-#######################
-####### PLOTTING ######
-#######################
-
-# Summary: average BF per mu and n. Rows are grouped by mu in the order
-# returned by SELECT DISTINCT mu, which determines the line colors.
-cauchy_summary <- function(summary_path = NULL) {
-  # read the simulation results from the file
-  con <- dbConnect(duckdb(), db_file)
-  # get mus
-  mus <- unlist(dbGetQuery(con, "SELECT DISTINCT mu FROM cauchy_prior ORDER BY mu"))
-  # average BF over repetitions
-  results_df <- dbGetQuery(con, "SELECT mu, n, AVG(bf) AS bf FROM cauchy_prior GROUP BY n, mu ORDER BY mu, n")
-  dbDisconnect(con)
-  summary_df <- results_df[order(match(results_df$mu, mus)), ]
-  rownames(summary_df) <- NULL
-
-  if (!is.null(summary_path)) {
-    dir.create(dirname(summary_path), showWarnings = FALSE, recursive = TRUE)
-    write.table(summary_df, summary_path, sep = "\t", quote = TRUE, row.names = FALSE)
-    cat("=> Saved cauchy summary to:", summary_path, "\n")
-  }
-
-  summary_df
-}
 
 # `summary` is either the data.frame returned by cauchy_summary() or a path
 # to the summary .txt it wrote.
 plot_cauchy_summary <- function(summary, filename = "thesis/figures/cauchy-prior-simulation.pdf") {
-  results_df <- if (is.character(summary)) {
-    read.table(summary, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
-  } else {
-    summary
-  }
+  results_df <- read_summary(summary)
   mus <- unique(results_df$mu)
   pdf(filename)
   plot(0, 0,
@@ -74,68 +40,11 @@ plot_cauchy_summary <- function(summary, filename = "thesis/figures/cauchy-prior
   invisible(results_df)
 }
 
-# Summary: decision probability for H0 per mu for every (r, bf_crit, trial range)
-# combination shown in the overview plot.
-realistic_sim_overview_summary <- function(summary_path = NULL) {
-  con <- dbConnect(duckdb(), db_file)
-  settings <- data.frame(
-    r = c(r_vals[2], r_vals[2], r_vals[2], r_vals[1], r_vals[3], r_vals[2]),
-    bf_crit = c(BF_crits[1], BF_crits[2], BF_crits[3], BF_crits[1], BF_crits[1], BF_crits[1]),
-    trial_start = c(2, 2, 2, 2, 2, 20),
-    trial_end = c(100000, 100000, 100000, 100000, 100000, 200)
-  )
-  summary_rows <- vector("list", nrow(settings))
-  for (i in seq_len(nrow(settings))) {
-    s <- settings[i, ]
-    probs <- if (s$trial_start == 2) {
-      dbGetQuery(
-        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
-                FROM cauchy_sym
-                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-                AND trial_start = 2 AND trial_end = 100000
-                GROUP BY mu
-                ORDER BY mu",
-        list(s$r, s$bf_crit)
-      )
-    } else {
-      dbGetQuery(
-        con, "SELECT mu, COUNT (CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
-                FROM cauchy_sym
-                WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-                AND trial_start = 20 AND trial_end = 200
-                GROUP BY mu
-                ORDER BY mu",
-        list(s$r, s$bf_crit)
-      )
-    }
-    summary_rows[[i]] <- data.frame(
-      r = s$r, bf_crit = s$bf_crit,
-      trial_start = s$trial_start, trial_end = s$trial_end,
-      mu = probs$mu, prob = probs$prob
-    )
-  }
-  dbDisconnect(con)
-  summary_df <- do.call(rbind, summary_rows)
-  rownames(summary_df) <- NULL
-
-  if (!is.null(summary_path)) {
-    dir.create(dirname(summary_path), showWarnings = FALSE, recursive = TRUE)
-    write.table(summary_df, summary_path, sep = "\t", quote = TRUE, row.names = FALSE)
-    cat("=> Saved overview summary to:", summary_path, "\n")
-  }
-
-  summary_df
-}
-
 # `summary` is either the data.frame returned by realistic_sim_overview_summary()
 # or a path to the summary .txt it wrote.
 plot_realistic_sim_overview_summary <- function(summary,
                                                 filename = "thesis/figures/realistic-sym-decision-prob.pdf") {
-  summary_df <- if (is.character(summary)) {
-    read.table(summary, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
-  } else {
-    summary
-  }
+  summary_df <- read_summary(summary)
   get_probs <- function(r, bf_crit, trial_start = 2) {
     summary_df[abs(summary_df$r - r) < 1e-6 & summary_df$bf_crit == bf_crit &
       summary_df$trial_start == trial_start, c("mu", "prob")]
@@ -219,73 +128,11 @@ plot_realistic_sim_overview_summary <- function(summary,
   # }
   invisible(summary_df)
 }
-# Plot three BF01 curves for mus and decision probability for H0 given mu
-# Summary: stop counts of every repetition per mu and decision
-# (0 = H0, 1 = H1, 2 = indecisive) for the given bf_crit and r_val.
-realistic_sim_histograms_summary <- function(bf_crit, mus, r_val, summary_path = NULL) {
-  con <- dbConnect(duckdb(), db_file)
-  summary_rows <- list()
-  for (mu in mus) {
-    h0_data <- dbGetQuery(
-      con, "SELECT stop_count
-                    FROM cauchy_sym
-                    WHERE ABS(? - r) < 1e-6
-                    AND bf_crit = ?
-                    AND trial_start = 2 AND trial_end = 100000
-                    AND ABS(? - mu) < 1e-6
-                    AND decision = 0",
-      list(r_val, bf_crit, mu)
-    )
-    h1_data <- dbGetQuery(
-      con, "SELECT stop_count
-                    FROM cauchy_sym
-                    WHERE ABS(? - r) < 1e-6
-                    AND bf_crit = ?
-                    AND trial_start = 2 AND trial_end = 100000
-                    AND ABS(? - mu) < 1e-6
-                    AND decision = 1",
-      list(r_val, bf_crit, mu)
-    )
-    indecisive_data <- dbGetQuery(
-      con, "SELECT stop_count
-                    FROM cauchy_sym
-                    WHERE ABS(? - r) < 1e-6
-                    AND bf_crit = ?
-                    AND trial_start = 2 AND trial_end = 100000
-                    AND ABS(? - mu) < 1e-6
-                    AND decision = 2",
-      list(r_val, bf_crit, mu)
-    )
-    for (decision in 0:2) {
-      stop_counts <- list(h0_data, h1_data, indecisive_data)[[decision + 1]][["stop_count"]]
-      summary_rows[[length(summary_rows) + 1]] <- data.frame(
-        bf_crit = rep(bf_crit, length(stop_counts)), r_val = rep(r_val, length(stop_counts)),
-        mu = rep(mu, length(stop_counts)), decision = rep(decision, length(stop_counts)),
-        stop_count = stop_counts
-      )
-    }
-  }
-  dbDisconnect(con)
-  summary_df <- do.call(rbind, summary_rows)
-  rownames(summary_df) <- NULL
-
-  if (!is.null(summary_path)) {
-    dir.create(dirname(summary_path), showWarnings = FALSE, recursive = TRUE)
-    write.table(summary_df, summary_path, sep = "\t", quote = TRUE, row.names = FALSE)
-    cat("=> Saved histogram summary to:", summary_path, "\n")
-  }
-
-  summary_df
-}
 
 # `summary` is either the data.frame returned by realistic_sim_histograms_summary()
 # or a path to the summary .txt it wrote. Writes one pdf per mu.
 plot_realistic_sim_histograms_summary <- function(summary) {
-  summary_df <- if (is.character(summary)) {
-    read.table(summary, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
-  } else {
-    summary
-  }
+  summary_df <- read_summary(summary)
   bf_crit <- summary_df$bf_crit[1]
   r_val <- summary_df$r_val[1]
   mus <- unique(summary_df$mu)
@@ -322,48 +169,10 @@ plot_realistic_sim_histograms_summary <- function(summary) {
   invisible(summary_df)
 }
 
-# Summary: number of simulations and decision probability for H0 per mu.
-realistic_sim_decision_prob_curve_summary <- function(bf_crit, r_val, summary_path = NULL) {
-
-  con <- dbConnect(duckdb(), db_file)
-
-  long_range <- dbGetQuery(
-    con,
-    "
-    SELECT
-      mu,
-      COUNT(*) AS n_total,
-      COUNT(CASE WHEN decision = 0 THEN 1 END) * 1.0 / COUNT(*) AS prob
-    FROM cauchy_sym
-    WHERE ABS(? - r) < 1e-6
-      AND bf_crit = ?
-      AND trial_start = 2
-      AND trial_end = 100000
-    GROUP BY mu
-    ORDER BY mu
-    ",
-    list(r_val, bf_crit)
-  )
-  dbDisconnect(con)
-  summary_df <- data.frame(bf_crit = bf_crit, r_val = r_val, long_range)
-
-  if (!is.null(summary_path)) {
-    dir.create(dirname(summary_path), showWarnings = FALSE, recursive = TRUE)
-    write.table(summary_df, summary_path, sep = "\t", quote = TRUE, row.names = FALSE)
-    cat("=> Saved decision probability summary to:", summary_path, "\n")
-  }
-
-  summary_df
-}
-
 # `summary` is either the data.frame returned by
 # realistic_sim_decision_prob_curve_summary() or a path to the summary .txt it wrote.
 plot_realistic_sim_decision_prob_curve_summary <- function(summary) {
-  long_range <- if (is.character(summary)) {
-    read.table(summary, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
-  } else {
-    summary
-  }
+  long_range <- read_summary(summary)
   bf_crit <- long_range$bf_crit[1]
   r_val <- long_range$r_val[1]
 
@@ -423,16 +232,8 @@ plot_realistic_sim_decision_prob_curve_summary <- function(summary) {
   dev.off()
   invisible(long_range)
 }
-decision_prob_summary <- realistic_sim_decision_prob_curve_summary(
-  bf_crit = 3, r_val = 1 / sqrt(2),
-  summary_path = "thesis/summaries/realistic-sim-decision-prob-bf-crit2-3-r-0.707.txt"
-)
-plot_realistic_sim_decision_prob_curve_summary(decision_prob_summary)
-plot_cauchy_summary(cauchy_summary(summary_path = "thesis/summaries/cauchy-prior-simulation.txt"))
-plot_realistic_sim_overview_summary(realistic_sim_overview_summary(
-  summary_path = "thesis/summaries/realistic-sym-decision-prob.txt"
-))
-plot_realistic_sim_histograms_summary(realistic_sim_histograms_summary(
-  bf_crit = 3, c(0.1, 0.5, 0.8), r_val = 1 / sqrt(2),
-  summary_path = "thesis/summaries/realistic-sim-bf-crit-3-r-0.707.txt"
-))
+
+plot_realistic_sim_decision_prob_curve_summary("thesis/summaries/realistic-sim-decision-prob-bf-crit2-3-r-0.707.txt")
+plot_cauchy_summary("thesis/summaries/cauchy-prior-simulation.txt")
+plot_realistic_sim_overview_summary("thesis/summaries/realistic-sym-decision-prob.txt")
+plot_realistic_sim_histograms_summary("thesis/summaries/realistic-sim-bf-crit-3-r-0.707.txt")

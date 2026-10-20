@@ -1,6 +1,19 @@
-# Summary functions for the expected cost analysis: they query the simulation
-# databases (through shared/queries.R) and return the cost summaries.
-# Sourced by student-research/plots/expected-costs.R.
+# Summaries for the expected cost analysis (fixed sample size vs. optional stopping).
+# Queries data/hacking-bayes.duckdb and data/large_effects.duckdb and writes
+# student-research/summaries/; plotted by student-research/plots/expected-costs.R.
+# Set working directory
+setwd(".")
+
+# Clear workspace
+rm(list = ls())
+gc()
+library(duckdb)
+source("shared/queries.R")
+source("shared/summary-io.R")
+source("student-research/expected-costs-settings.R")
+
+db_file <- "data/hacking-bayes.duckdb"
+db_large_effects_file <- "data/large_effects.duckdb"
 
 # cost_matrix is a 2x3 list
 # ====================================================================
@@ -108,37 +121,6 @@ summary_expected_costs_original <- function(
         ws_delta = ws_delta, ws_cost = ws_cost
     )
     }
-
-# Calculate BF_crit from costs
-bf_crit_from_cost <- function(cost_matrix) {
-    c00 <- cost_matrix["H0_true", "dec_H0"]
-    c10 <- cost_matrix["H0_true", "dec_H1"]
-    ci0 <- cost_matrix["H0_true", "dec_ind"]
-    c01 <- cost_matrix["H1_true", "dec_H0"]
-    c11 <- cost_matrix["H1_true", "dec_H1"]
-    ci1 <- cost_matrix["H1_true", "dec_ind"]
-
-    # C('H_0', BF01) = C('~', BF01)  ->  upper threshold, decide H_0
-    bf_crit <- (ci1 - c01) / (c00 - ci0)
-
-    # C('H_1', BF01) = C('~', BF01)  ->  lower threshold, decide H_1
-    bf_crit2 <- (ci1 - c11) / (c10 - ci0)
-
-    if (bf_crit <= 1) {
-        warning("BF_crit <= 1: indecision region on H_0 side vanishes")
-    }
-    if (bf_crit2 >= 1) {
-        warning("BF_crit2 >= 1: indecision region on H_1 side vanishes")
-    }
-    if (abs(bf_crit2 - 1 / bf_crit) > 1e-9) {
-        message(sprintf(
-            "Asymmetric matrix: BF_crit = %.4f, 1/BF_crit2 = %.4f",
-            bf_crit, 1 / bf_crit2
-        ))
-    }
-
-    list(bf_crit = bf_crit, bf_crit2 = bf_crit2)
-}
 
 ###########################################
 ############ WEIGHT COSTS #################
@@ -364,11 +346,7 @@ prior_distr_cost_summary <- function(con, bf_crit, r_val, cost_matrix,
         expected_cost = expected_cost, interval_mass = captured_mass
     )
 
-    if (!is.null(summary_path)) {
-        dir.create(dirname(summary_path), showWarnings = FALSE, recursive = TRUE)
-        write.table(summary_df, summary_path, sep = "\t", quote = TRUE, row.names = FALSE)
-        cat("=> Saved prior-weighted cost summary to:", summary_path, "\n")
-    }
+    write_summary(summary_df, summary_path, "prior-weighted cost")
 
     summary_df
 }
@@ -549,3 +527,125 @@ get_large_effects_cost_points <- function(con_large, bf_crit, r_val, cost_matrix
             residual_mass = residual_mass
         )
     }
+
+# The summary of summary_expected_costs_original() holds one cost curve per design
+# ("os" = optional stopping, "fm" = MAX, "fa" = STOP AVG, "ws" = SAME DIST);
+# this turns it into one table with one row per point of a curve.
+expected_costs_original_table <- function(summary) {
+    curve <- function(name, delta, cost) data.frame(series = rep(name, length(delta)), delta = delta, cost = cost)
+    data.frame(
+        bf_crit = summary$bf_crit, r_val = summary$r_val,
+        c00 = summary$c00, c10 = summary$c10, ci0 = summary$ci0,
+        c01 = summary$c01, c11 = summary$c11, ci1 = summary$ci1,
+        rbind(
+            curve("os", summary$os_mu, summary$os_cost),
+            curve("fm", summary$fm_mu, summary$fm_cost),
+            curve("fa", summary$fa_delta, summary$fa_cost),
+            curve("ws", summary$ws_delta, summary$ws_cost)
+        )
+    )
+}
+
+# Expected cost curves for every cost scenario
+write_summary(
+    expected_costs_original_table(summary_expected_costs_original(3, r_vals[2])),
+    sprintf("student-research/summaries/expected-cost-%s-bf%s-r%.3f.txt", "default", 3, r_vals[2]),
+    "expected cost"
+)
+write_summary(
+    expected_costs_original_table(summary_expected_costs_original(3, r_vals[2], cost_matrix1)),
+    sprintf("student-research/summaries/expected-cost-%s-bf%s-r%.3f.txt", "sym-ind-ge-error", 3, r_vals[2]),
+    "expected cost"
+)
+write_summary(
+    expected_costs_original_table(summary_expected_costs_original(3, r_vals[2], cost_matrix2)),
+    sprintf("student-research/summaries/expected-cost-%s-bf%s-r%.3f.txt", "sym-ind-e-error", 3, r_vals[2]),
+    "expected cost"
+)
+write_summary(
+    expected_costs_original_table(summary_expected_costs_original(3, r_vals[2], cost_matrix3)),
+    sprintf("student-research/summaries/expected-cost-%s-bf%s-r%.3f.txt", "sym-ind-le-error", 3, r_vals[2]),
+    "expected cost"
+)
+write_summary(
+    expected_costs_original_table(summary_expected_costs_original(3, r_vals[2], cost_matrix4)),
+    sprintf("student-research/summaries/expected-cost-%s-bf%s-r%.3f.txt", "sym-ind-bfcrit3", 3, r_vals[2]),
+    "expected cost"
+)
+write_summary(
+    expected_costs_original_table(summary_expected_costs_original(6, r_vals[2], cost_matrix5)),
+    sprintf("student-research/summaries/expected-cost-%s-bf%s-r%.3f.txt", "sym-ind-bfcrit6", 6, r_vals[2]),
+    "expected cost"
+)
+write_summary(
+    expected_costs_original_table(summary_expected_costs_original(10, r_vals[2], cost_matrix6)),
+    sprintf("student-research/summaries/expected-cost-%s-bf%s-r%.3f.txt", "sym-ind-bfcrit10", 10, r_vals[2]),
+    "expected cost"
+)
+
+con <- dbConnect(duckdb(), db_file)
+for (bfc in c(3)) { # , 6, 10)) {
+    cm <- bf_crit_cost_matrices[[as.character(bfc)]]
+    for (dtype in c("opt_stop", "stop_avg", "same_dist")) {
+        for (mode in c("interval", "threshold")) { # NEW: both extent modes, every call
+            prior_distr_cost_summary(con,
+                bf_crit = bfc, r_val = r_vals[2],
+                cost_matrix = cm, df_type = dtype,
+                grid_extent_mode = mode,
+                mass_interval = c(-1, 1),
+                tail_threshold = 10e-5,
+                scenario_name = sprintf("sym-ind-bfcrit%s", bfc),
+                summary_path = sprintf(
+                    "student-research/summaries/prior-weighted-cost_%s-sym-ind-bfcrit%s-bf%s-%s.txt",
+                    dtype, bfc, bfc, mode
+                )
+            )
+        }
+    }
+}
+dbDisconnect(con)
+
+con <- dbConnect(duckdb(), db_file)
+con_large <- dbConnect(duckdb(), db_large_effects_file)
+
+all_summaries   <- list() # one summary for all results
+per_bf_summaries <- list() # one summary per bf crit
+
+for (bfc in c(3, 6, 10)) {
+  cm <- bf_crit_cost_matrices[[as.character(bfc)]]
+  bf_key <- as.character(bfc)
+  per_bf_summaries[[bf_key]] <- list()
+
+  for (dtype in c("opt_stop", "stop_avg", "same_dist")) {
+    for (bound in c("upper", "lower")) {
+
+      summary <- summary_expected_costs(
+        con,
+        bf_crit = bfc, r_val = r_vals[2],
+        bound = bound,
+        cost_matrix = cm, df_type = dtype,
+        mass_interval = c(-3, 3),
+        con_large = con_large
+      )
+      summary_df <- as.data.frame(summary)
+
+      all_summaries[[length(all_summaries) + 1]] <- summary_df
+      per_bf_summaries[[bf_key]][[length(per_bf_summaries[[bf_key]]) + 1]] <- summary_df
+    }
+  }
+  df_bf <- do.call(rbind, per_bf_summaries[[bf_key]])
+  write.table(
+    df_bf,
+    sprintf("student-research/summaries/expected_costs_bf-%s.txt", bfc),
+    sep = "\t", row.names = FALSE, col.names = TRUE
+  )
+}
+
+df_all <- do.call(rbind, all_summaries)
+write.table(
+  df_all,
+  "student-research/summaries/expected_costs_all.txt",
+  sep = "\t", row.names = FALSE, col.names = TRUE
+)
+dbDisconnect(con)
+dbDisconnect(con_large, shutdown = TRUE)

@@ -7,6 +7,7 @@ setwd(".")
 # Clear workspace
 rm(list = ls())
 gc()
+source("shared/summary-io.R")
 
 alpha <- 0.05
 
@@ -113,11 +114,7 @@ plot_walk_summary <- function(summary_df, eCrit_upper, eCrit_lower,
 # `summary` is either the data.frame returned by simulate_fixed_n() or a path
 # to the summary .txt it wrote. Draws one line per decision (H1, H0, indecisive).
 plot_fixed_n_summary <- function(summary, main_title = NULL, filename = NULL) {
-  summary_df <- if (is.character(summary)) {
-    read.table(summary, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
-  } else {
-    summary
-  }
+  summary_df <- read_summary(summary)
   summary_df <- summary_df[order(summary_df$n), ]
 
   if (!is.null(filename)) {

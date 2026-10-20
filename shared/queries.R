@@ -1,7 +1,7 @@
 # Shared DuckDB queries for the optional stopping (cauchy_sym) and the
 # fixed sample size (cauchy_sym_fixed_size) simulations.
 # All functions take an open connection and return a data.frame.
-# Used by lab-project/plots/fixed-plots.R and student-research/plots/expected-costs.R.
+# Used by lab-project/summarise/fixed-size.R and student-research/summarise/expected-costs.R.
 
 # Decision probability and mean stop count per mu (optional stopping)
 get_opt_stop <- function(con, bf_crit, r_val, decision = 0) {
