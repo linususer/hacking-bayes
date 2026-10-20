@@ -55,3 +55,6 @@ point_and_cauchy_prior <- function() {
     text(x = 2.5, y = 0.45, labels = bquote(BF["01"] == frac(p(data * " | " * H[0]), p(data * " | " * H[1]))))
     dev.off()
 }
+
+freq_optional_stopping()
+point_and_cauchy_prior()

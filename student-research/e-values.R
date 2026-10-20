@@ -545,7 +545,7 @@ for (trueDelta in trueDeltas) {
   sum_df <- summarize_walks(replications, trueDelta = trueDelta)
   all_summaries[[as.character(trueDelta)]] <- sum_df
   
-  plot_file <- sprintf("student-research/summaries/walks-plot-standard-trueDelta-%.2f.pdf", trueDelta)
+  plot_file <- sprintf("student-research/figures/walks-plot-standard-trueDelta-%.2f.pdf", trueDelta)
   plot_walk_summary(
     sum_df, 
     eCrit_upper = eCrit1, eCrit_lower = eCrit0,
@@ -589,7 +589,7 @@ for (trueDelta in c(0)) {
   sum_df_asym <- summarize_walks(replications_asym, trueDelta = trueDelta)
   all_asym_summaries[[as.character(trueDelta)]] <- sum_df_asym
 
-  plot_file <- sprintf("student-research/summaries/walks-plot-asym-n-%.2f.pdf", n_max)
+  plot_file <- sprintf("student-research/figures/walks-plot-asym-n-%.2f.pdf", n_max)
   plot_walk_summary(
     sum_df_asym,
     eCrit_upper = asym_upper, eCrit_lower = asym_lower,
@@ -772,7 +772,7 @@ fixed_n_summary_0 <- simulate_fixed_n(
 )
 plot_fixed_n_summary(
   fixed_n_summary_0,
-  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.00-own.png"
+  filename = "student-research/figures/fixed-n-plot-trueDelta-0.00-own.png"
 )
  
 # --- True Delta = 0.1 ---
@@ -786,7 +786,7 @@ fixed_n_summary_01 <- simulate_fixed_n(
 )
 plot_fixed_n_summary(
   fixed_n_summary_01,
-  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.10-own.png"
+  filename = "student-research/figures/fixed-n-plot-trueDelta-0.10-own.png"
 )
  
 # --- True Delta = 0.2 ---
@@ -800,7 +800,7 @@ fixed_n_summary_02 <- simulate_fixed_n(
 )
 plot_fixed_n_summary(
   fixed_n_summary_02,
-  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.20-own.png"
+  filename = "student-research/figures/fixed-n-plot-trueDelta-0.20-own.png"
 )
  
 # --- True Delta = 0.3 ---
@@ -814,7 +814,7 @@ fixed_n_summary_03 <- simulate_fixed_n(
 )
 plot_fixed_n_summary(
   fixed_n_summary_03,
-  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.30-own.png"
+  filename = "student-research/figures/fixed-n-plot-trueDelta-0.30-own.png"
 )
  
 # --- True Delta = 0.42 ---
@@ -828,7 +828,7 @@ fixed_n_summary_04 <- simulate_fixed_n(
 )
 plot_fixed_n_summary(
   fixed_n_summary_04,
-  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.42-own.png"
+  filename = "student-research/figures/fixed-n-plot-trueDelta-0.42-own.png"
 )
  
 # --- True Delta = 0.5 ---
@@ -842,7 +842,7 @@ fixed_n_summary_05 <- simulate_fixed_n(
 )
 plot_fixed_n_summary(
   fixed_n_summary_05,
-  filename = "student-research/summaries/fixed-n-plot-trueDelta-0.50-own.png"
+  filename = "student-research/figures/fixed-n-plot-trueDelta-0.50-own.png"
 )
  
 # Export combined summary (all true deltas)

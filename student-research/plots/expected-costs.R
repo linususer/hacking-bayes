@@ -847,28 +847,17 @@ extend_grid_interp <- function(x, y, r_val, target_delta,
     data.frame(delta = grid, cost = y_grid)
 }
 
-plot_prior_distr_cost <- function(con, bf_crit, r_val, cost_matrix,
-                                  df_type = "opt_stop", target_delta = 0.05,
-                                  grid_extent_mode = c("interval", "threshold"),
-                                  mass_interval = c(-1, 1),
-                                  tail_threshold = 1e-7,
-                                  scenario_name = "default") {
+# Summary: prior-weighted expected cost per effect size (one row per plotted point)
+# together with the point cost given H0, the total cost given H1, the expected cost
+# and the captured Cauchy mass.
+prior_distr_cost_summary <- function(con, bf_crit, r_val, cost_matrix,
+                                     df_type = "opt_stop", target_delta = 0.05,
+                                     grid_extent_mode = c("interval", "threshold"),
+                                     mass_interval = c(-1, 1),
+                                     tail_threshold = 1e-7,
+                                     scenario_name = "default",
+                                     summary_path = NULL) {
     grid_extent_mode <- match.arg(grid_extent_mode)
-
-    col <- switch(df_type,
-        "opt_stop" = my_colors[2],
-        "fixed_max" = my_colors[3],
-        "stop_avg" = my_colors[4],
-        "same_dist" = my_colors[5],
-        stop("Invalid df_type")
-    )
-    title_text <- switch(df_type,
-        "opt_stop" = "Optional Stopping",
-        "fixed_max" = "MAX",
-        "stop_avg" = "STOP AVG",
-        "same_dist" = "SAME DIST",
-        stop("invalid df_type")
-    )
 
     df <- get_cost_curve(con, bf_crit, r_val, cost_matrix, df_type)
     delta_or_mu <- if ("delta" %in% names(df)) "delta" else "mu"
@@ -919,6 +908,57 @@ plot_prior_distr_cost <- function(con, bf_crit, r_val, cost_matrix,
         h0_point_cost, h1_total_cost, expected_cost
     ))
 
+    summary_df <- data.frame(
+        bf_crit = bf_crit, r_val = r_val, df_type = df_type,
+        scenario_name = scenario_name, grid_extent_mode = grid_extent_mode,
+        delta = deltas_plot, weighted_cost = cost_plot,
+        h0_point_cost = h0_point_cost, h1_total_cost = h1_total_cost,
+        expected_cost = expected_cost, interval_mass = captured_mass
+    )
+
+    if (!is.null(summary_path)) {
+        dir.create(dirname(summary_path), showWarnings = FALSE, recursive = TRUE)
+        write.table(summary_df, summary_path, sep = "\t", quote = TRUE, row.names = FALSE)
+        cat("=> Saved prior-weighted cost summary to:", summary_path, "\n")
+    }
+
+    summary_df
+}
+
+# `summary` is either the data.frame returned by prior_distr_cost_summary()
+# or a path to the summary .txt it wrote.
+plot_prior_distr_cost_summary <- function(summary) {
+    summary_df <- if (is.character(summary)) {
+        read.table(summary, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+    } else {
+        summary
+    }
+    bf_crit <- summary_df$bf_crit[1]
+    r_val <- summary_df$r_val[1]
+    df_type <- summary_df$df_type[1]
+    scenario_name <- summary_df$scenario_name[1]
+    grid_extent_mode <- summary_df$grid_extent_mode[1]
+    deltas_plot <- summary_df$delta
+    cost_plot <- summary_df$weighted_cost
+    h0_point_cost <- summary_df$h0_point_cost[1]
+    h1_total_cost <- summary_df$h1_total_cost[1]
+    expected_cost <- summary_df$expected_cost[1]
+
+    col <- switch(df_type,
+        "opt_stop" = my_colors[2],
+        "fixed_max" = my_colors[3],
+        "stop_avg" = my_colors[4],
+        "same_dist" = my_colors[5],
+        stop("Invalid df_type")
+    )
+    title_text <- switch(df_type,
+        "opt_stop" = "Optional Stopping",
+        "fixed_max" = "MAX",
+        "stop_avg" = "STOP AVG",
+        "same_dist" = "SAME DIST",
+        stop("invalid df_type")
+    )
+
     # NEW: mode goes into the filename so interval/threshold don't overwrite each other
     pdf(sprintf(
         "student-research/figures/prior-weighted-cost_%s-%s-bf%s-%s.pdf",
@@ -968,13 +1008,7 @@ plot_prior_distr_cost <- function(con, bf_crit, r_val, cost_matrix,
     )
 
     dev.off()
-    invisible(list(
-        data = data.frame(delta = deltas_plot, weighted_cost = cost_plot),
-        h0_point_cost = h0_point_cost,
-        h1_total_cost = h1_total_cost,
-        expected_cost = expected_cost,
-        interval_mass = captured_mass
-    ))
+    invisible(summary_df)
 }
 
 # NEW: map each BF_crit to its purpose-built cost matrix
@@ -989,14 +1023,18 @@ for (bfc in c(3)) { # , 6, 10)) {
     cm <- bf_crit_cost_matrices[[as.character(bfc)]]
     for (dtype in c("opt_stop", "stop_avg", "same_dist")) {
         for (mode in c("interval", "threshold")) { # NEW: both extent modes, every call
-            plot_prior_distr_cost(con,
+            plot_prior_distr_cost_summary(prior_distr_cost_summary(con,
                 bf_crit = bfc, r_val = r_vals[2],
                 cost_matrix = cm, df_type = dtype,
                 grid_extent_mode = mode,
                 mass_interval = c(-1, 1),
                 tail_threshold = 10e-5,
-                scenario_name = sprintf("sym-ind-bfcrit%s", bfc)
-            )
+                scenario_name = sprintf("sym-ind-bfcrit%s", bfc),
+                summary_path = sprintf(
+                    "student-research/summaries/prior-weighted-cost_%s-sym-ind-bfcrit%s-bf%s-%s.txt",
+                    dtype, bfc, bfc, mode
+                )
+            ))
         }
     }
 }
@@ -1295,6 +1333,7 @@ for (bfc in c(3, 6, 10)) {
         mass_interval = c(-3, 3),
         con_large = con_large
       )
+      plot_cost_bound(summary)
       summary_df <- as.data.frame(summary)
 
       all_summaries[[length(all_summaries) + 1]] <- summary_df
@@ -1338,7 +1377,7 @@ summary_all <- read.table(
 ## overview plot for everything
 
 plot_overview_expected_costs <- function(summary,
-                                          file = "student-research/summaries/expected_costs_overview.pdf") {
+                                          file = "student-research/figures/expected_costs_overview.pdf") {
 
   if (!is.data.frame(summary)) {
     if (is.list(summary) && !is.null(summary$bf_crit)) {
