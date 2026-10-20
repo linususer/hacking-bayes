@@ -26,7 +26,7 @@ cauchy_summary <- function(summary_path = NULL) {
   # read the simulation results from the file
   con <- dbConnect(duckdb(), db_file)
   # get mus
-  mus <- unlist(dbGetQuery(con, "SELECT DISTINCT mu FROM cauchy_prior"))
+  mus <- unlist(dbGetQuery(con, "SELECT DISTINCT mu FROM cauchy_prior ORDER BY mu"))
   # average BF over repetitions
   results_df <- dbGetQuery(con, "SELECT mu, n, AVG(bf) AS bf FROM cauchy_prior GROUP BY n, mu ORDER BY mu, n")
   dbDisconnect(con)
@@ -231,6 +231,7 @@ realistic_sim_histograms_summary <- function(bf_crit, mus, r_val, summary_path =
                     FROM cauchy_sym
                     WHERE ABS(? - r) < 1e-6
                     AND bf_crit = ?
+                    AND trial_start = 2 AND trial_end = 100000
                     AND ABS(? - mu) < 1e-6
                     AND decision = 0",
       list(r_val, bf_crit, mu)
@@ -240,6 +241,7 @@ realistic_sim_histograms_summary <- function(bf_crit, mus, r_val, summary_path =
                     FROM cauchy_sym
                     WHERE ABS(? - r) < 1e-6
                     AND bf_crit = ?
+                    AND trial_start = 2 AND trial_end = 100000
                     AND ABS(? - mu) < 1e-6
                     AND decision = 1",
       list(r_val, bf_crit, mu)
@@ -249,6 +251,7 @@ realistic_sim_histograms_summary <- function(bf_crit, mus, r_val, summary_path =
                     FROM cauchy_sym
                     WHERE ABS(? - r) < 1e-6
                     AND bf_crit = ?
+                    AND trial_start = 2 AND trial_end = 100000
                     AND ABS(? - mu) < 1e-6
                     AND decision = 2",
       list(r_val, bf_crit, mu)

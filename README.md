@@ -4,6 +4,10 @@ Here are simulation data and plot functions to compare Optional Stopping and fix
 
 # Directory and DuckDB structure:
 
+Every plot script follows the same pattern: a `*_summary()` function queries the data and writes a
+tab-separated summary to `<project>/summaries/`, and a `plot_*_summary()` function draws the figure into
+`<project>/figures/` from that summary (or from the summary file).
+
 The repository bundles three projects that build on each other. Every script is run from the repository root (paths such as `data/` and `shared/` are relative to it).
 
 - **Thesis** – Bayesian Optional Stopping with the Bayesian t-test (`BayesFactor`).
@@ -14,7 +18,8 @@ The repository bundles three projects that build on each other. Every script is 
 hacking-bayes
 ├── data/                                  (not tracked, see below)
 ├── shared/
-│   └── define_colors.R                    -> color definitions (Okabe & Ito)
+│   ├── define_colors.R                    -> color definitions (Okabe & Ito)
+│   └── queries.R                          -> DuckDB queries shared by lab project and student research
 ├── thesis/
 │   ├── createDB.R                         -> migration of early simulation files into DuckDB
 │   ├── calculations/
@@ -26,7 +31,8 @@ hacking-bayes
 │   │   ├── cauchy-plots.R                 -> plots related to the Cauchy prior
 │   │   ├── optional-stopping-plot-functions.R -> histograms and decision probabilities for `bf_decision_threshold`
 │   │   └── realistic-plot-functions.R     -> Optional Stopping plots, poster at TeaP 2025 (see https://osf.io/yx8ng/files/f9bm3)
-│   └── figures/
+│   ├── figures/
+│   └── summaries/
 ├── lab-project/
 │   ├── calculations/
 │   │   └── realistic-fix-sim-par.R        -> main Bayesian t-test data for fixed sample size tests
@@ -34,13 +40,17 @@ hacking-bayes
 │   │   ├── fixed-plots.R                  -> fixed sample size results compared with Optional Stopping
 │   │   ├── random_walk_priors.R           -> random walk and point prior visualisations
 │   │   └── steele_replication.py          -> decision tree for the coin flip example of Steele (2013)
-│   └── figures/                           (report/ holds the figures used in the report)
+│   ├── figures/                           (report/ holds the figures used in the report)
+│   └── summaries/
 ├── student-research/
 │   ├── calculations/
+│   │   ├── e-values-simulation.R          -> e-value simulations (safestats), writes the summaries
 │   │   └── extension_sim.R                -> fixed N and Optional Stopping for large effect sizes
 │   ├── plots/
-│   │   └── expected-costs.R               -> expected costs of fixed N vs. Optional Stopping
-│   ├── e-values.R                         -> e-value simulations (safestats) and their plots
+│   │   ├── e-values-plots.R               -> e-value plots, made from the summaries only
+│   │   ├── expected-costs.R               -> expected costs of fixed N vs. Optional Stopping (run script)
+│   │   ├── expected-costs-summaries.R     -> cost summary functions
+│   │   └── expected-costs-plots.R         -> cost plot functions
 │   ├── figures/
 │   └── summaries/
 └── old/                                   -> results that are no longer needed
@@ -67,8 +77,8 @@ data/hacking-bayes.duckdb
 └── sanborn_replication [old]
 
 data/large_effects.duckdb [S]
-├── fixed_size_large_effect
-└── optional_stopping_large_effect
+├── cauchy_sym
+└── cauchy_sym_fixed_size
 
 data/e-values-simulation.RData [S]
 ```

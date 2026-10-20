@@ -6,6 +6,7 @@ rm(list = ls())
 gc()
 library(duckdb)
 source("shared/define_colors.R")
+source("shared/queries.R")
 # Initialise params
 big_sim_mus <- seq(0, 1, 0.01)
 r_vals <- c(0.5, 1, 2) / sqrt(2)
@@ -13,211 +14,6 @@ BF_crits <- c(3, 6, 10)
 repetitions <- 20000
 
 db_file <- "data/hacking-bayes.duckdb"
-
-####################
-##### QUERIES ######
-####################
-get_opt_stop <- function(con, bf_crit, r_val, decision = 0) {
-  dbExecute(con, "SET max_expression_depth TO 10000")
-  opt_stop <- dbGetQuery(
-    con, "
-    SELECT mu, COUNT (CASE WHEN decision = ? THEN 1.0 END) * 1.0 / COUNT(*) AS prob,
-           AVG(stop_count) AS mean_count
-    FROM cauchy_sym
-    WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-      AND trial_start = 2 AND trial_end = 100000
-    GROUP BY mu
-    ORDER BY mu",
-    list(decision, r_val, bf_crit)
-  )
-  opt_stop
-}
-
-get_fixed_max <- function(con, bf_crit, r_val, decision = 0) {
-  dbExecute(con, "SET max_expression_depth TO 10000")
-  fixed_max <- dbGetQuery(
-    con, "
-    WITH prob_table AS (
-      SELECT mu, trial_count,
-             COUNT(CASE WHEN decision = ? THEN 1 END) * 1.0 / COUNT(*) AS prob
-      FROM cauchy_sym_fixed_size
-      WHERE ABS(? - r) < 1e-6 AND bf_crit = ?
-      GROUP BY mu, trial_count
-    ),
-    ranked AS (
-      SELECT mu, trial_count, prob,
-             ROW_NUMBER() OVER (
-               PARTITION BY mu
-               ORDER BY prob DESC, trial_count ASC
-             ) AS rn
-      FROM prob_table
-    )
-    SELECT mu, trial_count, prob
-    FROM ranked
-    WHERE rn = 1
-    ORDER BY mu",
-    list(decision, r_val, bf_crit)
-  )
-  fixed_max
-}
-
-get_prob_by_trial <- function(con, bf_crit, r_val, decision = 1, fixed_max_df) {
-  dbExecute(con, "SET max_expression_depth TO 10000")
-  values_list <- paste(
-    apply(fixed_max_df, 1, function(row) {
-      sprintf("SELECT %s AS mu, %s AS trial_count", row["mu"], row["trial_count"])
-    }),
-    collapse = "\nUNION ALL\n"
-  )
-
-  sql <- sprintf("
-    WITH selected_combinations AS (
-      %s
-    )
-    SELECT s.mu, s.trial_count,
-           COUNT(CASE WHEN c.decision = ? THEN 1 END) * 1.0 / COUNT(*) AS prob
-    FROM cauchy_sym_fixed_size c
-    JOIN selected_combinations s
-      ON ABS(c.mu - s.mu) < 1e-6 AND c.trial_count = s.trial_count
-    WHERE ABS(? - c.r) < 1e-6 AND c.bf_crit = ?
-    GROUP BY s.mu, s.trial_count
-    ORDER BY s.mu, s.trial_count
-  ", values_list)
-
-  params <- list(decision, r_val, bf_crit)
-
-  prob_by_trial <- dbGetQuery(con, sql, params)
-  prob_by_trial
-}
-
-
-
-get_fixed_opt_avg <- function(con, bf_crit, r_val, decision = 0) {
-  dbExecute(con, "SET max_expression_depth TO 10000")
-  fixed_opt_avg <- dbGetQuery(con, "
-    WITH opt AS (
-      SELECT mu, AVG(stop_count) AS avg_stop,
-             SUM(CASE WHEN decision = ? THEN 1 END)*1.0/COUNT(*) AS prob_opt
-      FROM cauchy_sym
-      WHERE ABS(r - ?) < 1e-6 AND bf_crit = ? AND trial_start = 2 AND trial_end = 100000
-      GROUP BY mu
-    ),
-    fixed AS (
-      SELECT mu, trial_count,
-             SUM(CASE WHEN decision = ? THEN 1 ELSE 0 END)*1.0/COUNT(*) AS prob_fixed
-      FROM cauchy_sym_fixed_size
-      WHERE ABS(r - ?) < 1e-6 AND bf_crit = ?
-      GROUP BY mu, trial_count
-    ),
-    interp AS (
-      SELECT
-        o.mu AS delta,
-        o.avg_stop,
-        o.prob_opt,
-        f1.trial_count AS t1,
-        f1.prob_fixed AS p1,
-        f2.trial_count AS t2,
-        f2.prob_fixed AS p2,
-        CASE
-          WHEN f1.trial_count = f2.trial_count THEN f1.prob_fixed
-          ELSE f1.prob_fixed + (o.avg_stop - f1.trial_count) * (f2.prob_fixed - f1.prob_fixed) / (f2.trial_count - f1.trial_count)
-        END AS prob
-      FROM opt o
-      JOIN fixed f1 ON ABS(f1.mu - o.mu) < 0.001 AND f1.trial_count <= o.avg_stop
-      JOIN fixed f2 ON ABS(f2.mu - o.mu) < 0.001 AND f2.trial_count >= o.avg_stop
-      WHERE f1.trial_count = (
-        SELECT MAX(trial_count)
-        FROM fixed
-        WHERE ABS(mu - o.mu) < 0.001 AND trial_count <= o.avg_stop
-      )
-      AND f2.trial_count = (
-        SELECT MIN(trial_count)
-        FROM fixed
-        WHERE ABS(mu - o.mu) < 0.001 AND trial_count >= o.avg_stop
-      )
-    )
-    SELECT delta, avg_stop, prob_opt, prob
-    FROM interp
-    ORDER BY delta",
-    params = list(decision, r_val, bf_crit, decision, r_val, bf_crit)
-  )
-  fixed_opt_avg
-}
-
-get_fixed_weighted_sum <- function(con, bf_crit, r_val, decision = 0) {
-  dbExecute(con, "SET max_expression_depth TO 10000")
-  weighted_sum <- dbGetQuery(con, "
-WITH stop_dist AS (
-  SELECT
-    ROUND(mu, 6) AS mu,
-    stop_count,
-    COUNT(*)::DOUBLE PRECISION AS total
-  FROM cauchy_sym
-  WHERE ABS(r - ?) < 1e-6
-    AND bf_crit = ?
-    AND trial_start = 2
-    AND trial_end = 100000
-  GROUP BY ROUND(mu, 6), stop_count
-),
-sum_totals AS (
-  SELECT
-    mu,
-    SUM(total) AS total_sum
-  FROM stop_dist
-  GROUP BY mu
-),
-fixed_probs AS (
-  SELECT
-    ROUND(mu, 6) AS mu,
-    trial_count,
-    AVG(CASE WHEN decision = ? THEN 1.0 ELSE 0.0 END) AS p_h0_fixed
-  FROM cauchy_sym_fixed_size
-  WHERE ABS(r - ?) < 1e-6
-    AND bf_crit = ?
-  GROUP BY ROUND(mu, 6), trial_count
-),
-interpolated AS (
-  SELECT
-    s.mu,
-    s.stop_count,
-    s.total,
-    st.total_sum,
-    -- Find bounding trial_counts
-    f1.trial_count AS t1,
-    f1.p_h0_fixed AS p1,
-    f2.trial_count AS t2,
-    f2.p_h0_fixed AS p2,
-    CASE
-      WHEN f1.trial_count = f2.trial_count THEN f1.p_h0_fixed
-      ELSE f1.p_h0_fixed + (s.stop_count - f1.trial_count) * (f2.p_h0_fixed - f1.p_h0_fixed) / (f2.trial_count - f1.trial_count)
-    END AS p_interp
-  FROM stop_dist s
-  JOIN sum_totals st ON s.mu = st.mu
-  LEFT JOIN fixed_probs f1 ON f1.mu = s.mu AND f1.trial_count = (
-    SELECT MAX(trial_count) FROM fixed_probs
-    WHERE mu = s.mu AND trial_count <= s.stop_count
-  )
-  LEFT JOIN fixed_probs f2 ON f2.mu = s.mu AND f2.trial_count = (
-    SELECT MIN(trial_count) FROM fixed_probs
-    WHERE mu = s.mu AND trial_count >= s.stop_count
-  )
-),
-weighted AS (
-  SELECT
-    mu,
-    (total / total_sum) * p_interp AS weight_component
-  FROM interpolated
-  WHERE p_interp IS NOT NULL
-)
-SELECT
-  mu AS delta,
-  SUM(weight_component) AS prob
-FROM weighted
-GROUP BY mu
-ORDER BY delta;
-", list(r_val, bf_crit, decision, r_val, bf_crit))
-  weighted_sum
-}
 
 ###############
 #### PLOTS ####
@@ -227,8 +23,8 @@ fixed_big_mus <- c(seq(0, 0.09, 0.01), seq(0.1, 1, 0.05))
 BF_crits <- c(3)
 
 con <- dbConnect(duckdb(), db_file)
-fixed_opt_avg_data <- get_fixed_opt_avg(con, BF_crits[1], r_vals[2])
-fixed_weighted_sum_data <- get_fixed_weighted_sum(con, BF_crits[1], r_vals[2])
+fixed_opt_avg_data <- get_fixed_stop_avg(con, BF_crits[1], r_vals[2])
+fixed_weighted_sum_data <- get_fixed_same_dist(con, BF_crits[1], r_vals[2])
 fixed_max_data <- get_fixed_max(con, BF_crits[1], r_vals[2])
 dbDisconnect(con)
 
@@ -509,8 +305,8 @@ realistic_sim_combined_summary <- function(bf_crit, r_val, db_file = "data/hacki
 
   opt_stop <- get_opt_stop(con, bf_crit, r_val, decision)
   fixed_max <- get_fixed_max(con, bf_crit, r_val, decision)
-  fixed_opt_avg <- get_fixed_opt_avg(con, bf_crit, r_val, decision)
-  weighted_results <- get_fixed_weighted_sum(con, bf_crit, r_val, decision)
+  fixed_opt_avg <- get_fixed_stop_avg(con, bf_crit, r_val, decision)
+  weighted_results <- get_fixed_same_dist(con, bf_crit, r_val, decision)
 
   dbDisconnect(con)
 
@@ -551,7 +347,6 @@ plot_realistic_sim_combined_summary <- function(summary) {
   weighted_results <- data.frame(delta = series("same_dist")$delta, prob = series("same_dist")$prob)
 
   # Plot
-  par(mfrow = c(1, 1), mar = c(1, 1, 1, 1))
   pdf(paste("lab-project/figures/report/realistic-fixed-sim-overview-for-bfcrit-", bf_crit, "-r-", round(r_val, 3), ".pdf", sep = ""))
   par(mar = c(5, 6, 5, 5))
   # r_val text
@@ -712,8 +507,8 @@ plot_realistic_sim_combined_summary(realistic_sim_combined_summary(
 #   )
 
 #   fixed_max <- get_fixed_max(con, bf_crit, 2 * r_val)
-#   fixed_opt_avg <- get_fixed_opt_avg(con, bf_crit, 2 * r_val)
-#   weighted_sum <- get_fixed_weighted_sum(con, bf_crit, 2 * r_val)
+#   fixed_opt_avg <- get_fixed_stop_avg(con, bf_crit, 2 * r_val)
+#   weighted_sum <- get_fixed_same_dist(con, bf_crit, 2 * r_val)
 #   opt_stop <- get_opt_stop(con, bf_crit, r_val)
 
 #   lines(fixed_max$mu, fixed_max$prob, col = my_colors[3], lwd = 2, lty = 2)
@@ -747,8 +542,8 @@ decision_sim_fixed_size_summary <- function(bf_crit, r_val, summary_path = NULL)
       fixed_max <- get_prob_by_trial(con, bf_crit, r_val, decision, fixed_max_df = fixed_max_d0)
     }
     opt_stop <- get_opt_stop(con, bf_crit, r_val, decision)
-    fixed_opt_avg <- get_fixed_opt_avg(con, bf_crit, r_val, decision)
-    weighted_results <- get_fixed_weighted_sum(con, bf_crit, r_val, decision)
+    fixed_opt_avg <- get_fixed_stop_avg(con, bf_crit, r_val, decision)
+    weighted_results <- get_fixed_same_dist(con, bf_crit, r_val, decision)
     summary_rows[[length(summary_rows) + 1]] <- rbind(
       data.frame(decision = decision, series = rep("fixed_max", nrow(fixed_max)),
                  delta = fixed_max[["mu"]], trial_count = fixed_max[["trial_count"]], prob = fixed_max[["prob"]]),
@@ -966,12 +761,12 @@ prior_distr_summary <- function(con, bf_crit, r_val, df_type = "opt_stop", summa
       delta_or_mu <- "mu"
     },
     "fixed_opt_avg" = {
-      df <- get_fixed_opt_avg(con, bf_crit, r_val, decision = 0)
+      df <- get_fixed_stop_avg(con, bf_crit, r_val, decision = 0)
       target_delta <- 0.05
       delta_or_mu <- "delta"
     },
     "weighted_sum" = {
-      df <- get_fixed_weighted_sum(con, bf_crit, r_val, decision = 0)
+      df <- get_fixed_same_dist(con, bf_crit, r_val, decision = 0)
       target_delta <- 0.05
       delta_or_mu <- "delta"
     },

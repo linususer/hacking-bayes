@@ -37,6 +37,7 @@ probWithBFCritSummary <- function(mus, summary_path = NULL) {
                                     AND decision = 0
                                     AND mu = ?
                                     AND bf_crit = ?
+                                    AND trial_start = 2 AND trial_end = 100000
                                     ", list(mu, bf_crit))) / repetitions
         })
 
@@ -46,6 +47,7 @@ probWithBFCritSummary <- function(mus, summary_path = NULL) {
                                     AND decision = 0
                                     AND mu = ?
                                     AND bf_crit = ?
+                                    AND trial_start = 2 AND trial_end = 100000
                                     ", list(mu, bf_crit))) / repetitions
         })
         r3_prob <- sapply(BF_crits, function(bf_crit) {
@@ -54,6 +56,7 @@ probWithBFCritSummary <- function(mus, summary_path = NULL) {
                                     AND decision = 0
                                     AND mu = ?
                                     AND bf_crit = ?
+                                    AND trial_start = 2 AND trial_end = 100000
                                     ", list(mu, bf_crit))) / repetitions
         })
         summary_rows[[length(summary_rows) + 1]] <- data.frame(
@@ -123,7 +126,7 @@ plotProbWithBFCritBoundsSummary <- function(summary, mu) {
     }
     # Plot the decision probability for H0 given mu
     # x-axis: mu, y-axis: BF_crit
-     pdf(paste("thesis/figures/realistic-sym-decision-prob-mu-", mu, "-bf-crits.pdf", sep = ""))
+    # pdf(paste("thesis/figures/realistic-sym-decision-prob-mu-", mu, "-bf-crits.pdf", sep = ""))
     r2 <- summary_df[abs(summary_df$mu - mu) < 1e-9 & abs(summary_df$r - 1 / sqrt(2)) < 1e-6, ]
     BF_crits <- r2$bf_crit
     r2_prob <- r2$prob
@@ -149,6 +152,7 @@ decisionProbBFCritsSummary <- function(big_sim_mus, bf_crit, summary_path = NULL
                                     AND decision = 0
                                     AND ROUND(mu, 6) = ROUND(?, 6)
                                     AND bf_crit = ?
+                                    AND trial_start = 2 AND trial_end = 100000
                                     ", list(mu, bf_crit[1])) / repetitions
     })
     bf2_prob <- sapply(big_sim_mus, function(mu) {
@@ -157,6 +161,7 @@ decisionProbBFCritsSummary <- function(big_sim_mus, bf_crit, summary_path = NULL
                                     AND decision = 0
                                     AND ROUND(mu, 6) = ROUND(?, 6)
                                     AND bf_crit = ?
+                                    AND trial_start = 2 AND trial_end = 100000
                                     ", list(mu, bf_crit[2])) / repetitions
     })
     bf3_prob <- sapply(big_sim_mus, function(mu) {
@@ -165,6 +170,7 @@ decisionProbBFCritsSummary <- function(big_sim_mus, bf_crit, summary_path = NULL
                                     AND decision = 0
                                     AND ROUND(mu, 6) = ROUND(?, 6)
                                     AND bf_crit = ?
+                                    AND trial_start = 2 AND trial_end = 100000
                                     ", list(mu, bf_crit[3])) / repetitions
     })
     dbDisconnect(con)

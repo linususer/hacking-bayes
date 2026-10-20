@@ -92,10 +92,10 @@ optional_chunks      <- 1:(optional_repetitions / optional_chunk_size)
 
 con <- dbConnect(duckdb(), "data/large_effects.duckdb")
 
-dbExecute(con, "DROP TABLE IF EXISTS fixed_size_large_effect")
-dbExecute(con, "CREATE TABLE cauchy_sym_fixed (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
+dbExecute(con, "DROP TABLE IF EXISTS cauchy_sym_fixed_size")
+dbExecute(con, "CREATE TABLE cauchy_sym_fixed_size (decision INTEGER, trial_count INTEGER, bf DOUBLE, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
 
-dbExecute(con, "DROP TABLE IF EXISTS optional_stopping_large_effect")
+dbExecute(con, "DROP TABLE IF EXISTS cauchy_sym")
 dbExecute(con, "CREATE TABLE cauchy_sym (decision INTEGER, stop_count INTEGER, mu DOUBLE, bf_crit DOUBLE, r DOUBLE, trial_start INTEGER, trial_end INTEGER)")
 
 foreach(mu = mus) %do% {
@@ -105,13 +105,13 @@ foreach(mu = mus) %do% {
       foreach(fixed_chunks) %dopar% {
         simulate_fixed_size(mu, r, BF_crit, fixed_chunk_size, trial_start = fixed_trial_start, trial_end = fixed_trial_end)
       } -> fixed_results
-      dbWriteTable(con, "fixed_size_large_effect", rbindlist(fixed_results), append = TRUE)
+      dbWriteTable(con, "cauchy_sym_fixed_size", rbindlist(fixed_results), append = TRUE)
 
       # Optional stopping
       foreach(optional_chunks) %dopar% {
         simulate_optional_stopping(mu, r, BF_crit, optional_chunk_size, trial_start = optional_trial_start, trial_end = optional_trial_end)
       } -> optional_results
-      dbWriteTable(con, "optional_stopping_large_effect", rbindlist(optional_results), append = TRUE)
+      dbWriteTable(con, "cauchy_sym", rbindlist(optional_results), append = TRUE)
     }
   }
 }
