@@ -503,6 +503,17 @@ cat("\n=> Saved Asymmetrical Threshold summary to: student-research/summaries/as
 #   H0         if eValue <= eCrit_lower (default alpha)
 #   indecisive otherwise
 # The summary contains the decision counts and decision probabilities per n.
+
+# Paired, one-sided variant of safestats::safeTTestStat().
+# Unlike the original (expTerm * (aKummerFunction + bKummerFunction)),
+# the product is computed on the log scale, and the zeroIndex cutoff is
+# dropped. For large n, expTerm underflows and the original returns 0,
+# while the Kummer terms grow strongly. On the log scale the E-value
+# stays correct.
+# In the original, once expTerm < .Machine$double.eps (e.g. n > ~360 for
+# deltaS = 0.5), the result silently stays 0 without a warning or fallback,
+# since 0 < 0 is FALSE. This turns strong evidence into E = 0 and makes a
+# sequential product of E-values permanently 0.
 safeTTestKummer_paired <- function(x, y, designObj) {
   d <- x - y
   n <- length(d)
